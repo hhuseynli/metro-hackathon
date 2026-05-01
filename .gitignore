@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
+/tmp/
 
 # Node / frontend
 frontend/node_modules/
@@ -19,3 +20,4 @@ frontend/.env.local
 backend/key_stat.json
 backend/zone_counts.json
 backend/*.avi
+backend/outputs

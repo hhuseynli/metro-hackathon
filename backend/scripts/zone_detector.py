@@ -19,7 +19,7 @@ try:
             model = _get_model()
         h, w = frame.shape[:2]
         zone_width = w // n_zones
-        results = model(frame, classes=[0], verbose=False)
+        results = model(frame, classes=[0], conf=0.15, iou=0.7, verbose=False)
         zone_counts = {i: 0 for i in range(n_zones)}
         for box in results[0].boxes:
             x_center = float((box.xyxy[0][0] + box.xyxy[0][2]) / 2)
