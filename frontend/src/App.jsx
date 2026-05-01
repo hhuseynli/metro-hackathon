@@ -11,22 +11,22 @@ function App() {
       <header className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 max-w-5xl mx-auto w-full border-b border-slate-100 pb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <img 
-              src="https://metro.gov.az/default.png" 
-              alt="Baku Metro Logo" 
-              className="w-16 h-auto"
+            <img
+              src="https://metro.gov.az/default.png"
+              alt="Baku Metro Logo"
+              className="w-28 h-auto"
             />
             <span className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black border-l border-slate-200 pl-3">Bakı Metropoliteni</span>
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Platformada Paylanma
+            Perronda sərnişinlərin bərabər paylanması
           </h1>
           <p className="text-sm text-slate-500 font-medium">
             Real-vaxt rejimində sərnişin sıxlığının monitorinq sistemi
           </p>
         </div>
         <div className="text-right hidden sm:block">
-          <p className="text-xs text-slate-400 font-medium tracking-tight">Tapşırıq #4 — Metro Hackathon 2026</p>
+          <p className="text-xs text-slate-400 font-medium tracking-tight">Metro Hackathon 2026</p>
         </div>
       </header>
 
