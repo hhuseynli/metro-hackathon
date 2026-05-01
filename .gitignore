@@ -1,2 +1,21 @@
 /data
 .DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
+# Backend runtime artifacts
+backend/key_stat.json
+backend/zone_counts.json
+backend/*.avi
