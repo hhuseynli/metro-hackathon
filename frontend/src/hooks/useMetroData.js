@@ -25,7 +25,7 @@ export function useMetroData(intervalMs = 2000) {
         setStats(s)
         setError(null)
       } catch (e) {
-        if (alive) setError('Cannot reach backend — is uvicorn running on :8000?')
+        if (alive) setError('Backend ilə əlaqə yoxdur — uvicorn :8000 portunda işləyirmi?')
       }
     }
 

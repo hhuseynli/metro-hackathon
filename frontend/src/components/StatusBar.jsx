@@ -6,6 +6,13 @@ export default function StatusBar({ mode, frameCount, fps, error }) {
     connecting: 'text-slate-500',
   }[mode] || 'text-slate-500'
 
+  const modeDisplay = {
+    live: 'canlı',
+    precomputed: 'əvvəlcədən hesablanmış',
+    demo: 'demo',
+    connecting: 'qoşulur...',
+  }[mode] || mode
+
   return (
     <div className="flex items-center gap-4 text-xs text-slate-500 px-1">
       {error ? (
@@ -13,11 +20,11 @@ export default function StatusBar({ mode, frameCount, fps, error }) {
       ) : (
         <>
           <span>
-            Mode: <span className={`font-medium ${modeColor}`}>{mode}</span>
+            Rejim: <span className={`font-medium ${modeColor}`}>{modeDisplay}</span>
           </span>
-          <span>Frames: {frameCount}</span>
+          <span>Kadrlar: {frameCount}</span>
           {fps > 0 && <span>FPS: {fps}</span>}
-          <span className="ml-auto text-slate-600">Updates every 2s</span>
+          <span className="ml-auto text-slate-600">Hər 2 saniyədən bir yenilənir</span>
         </>
       )}
     </div>

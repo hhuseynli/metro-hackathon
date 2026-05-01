@@ -1,35 +1,37 @@
 import { useMetroData } from './hooks/useMetroData'
 import PlatformDiagram from './components/PlatformDiagram'
-import NudgePanel from './components/NudgePanel'
-import StatsPanel from './components/StatsPanel'
 import StatusBar from './components/StatusBar'
 
 function App() {
   const { zones, nudge, stats, error } = useMetroData()
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] p-4 md:p-8">
+    <div className="min-h-screen bg-white p-4 md:p-8 flex flex-col">
       {/* Header */}
-      <header className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+      <header className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 max-w-5xl mx-auto w-full border-b border-slate-100 pb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center text-xs font-bold text-white">M</div>
-            <span className="text-xs text-slate-500 uppercase tracking-widest">Baku Metro</span>
+          <div className="flex items-center gap-3 mb-2">
+            <img 
+              src="https://metro.gov.az/default.png" 
+              alt="Baku Metro Logo" 
+              className="w-16 h-auto"
+            />
+            <span className="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-black border-l border-slate-200 pl-3">Bakı Metropoliteni</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">
-            Platform Distribution
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+            Platformada Paylanma
           </h1>
-          <p className="text-sm text-slate-500">
-            Real-time passenger density &amp; behavioral nudge system
+          <p className="text-sm text-slate-500 font-medium">
+            Real-vaxt rejimində sərnişin sıxlığının monitorinq sistemi
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-slate-600">Challenge #4 — Metro Hackathon 2026</p>
+        <div className="text-right hidden sm:block">
+          <p className="text-xs text-slate-400 font-medium tracking-tight">Tapşırıq #4 — Metro Hackathon 2026</p>
         </div>
       </header>
 
       {/* Status bar */}
-      <div className="mb-4">
+      <div className="mb-6 max-w-5xl mx-auto w-full">
         <StatusBar
           mode={zones.mode}
           frameCount={zones.frame_count}
@@ -38,30 +40,12 @@ function App() {
         />
       </div>
 
-      {/* Main grid */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+      {/* Main Content - Centered */}
+      <main className="flex-1 flex flex-col items-center mt-6">
+        <div className="max-w-5xl w-full">
           <PlatformDiagram zones={zones.zones || {}} nudge={nudge} />
         </div>
-        <div className="flex flex-col gap-4">
-          <NudgePanel nudge={nudge} />
-          <StatsPanel stats={stats} />
-        </div>
-      </div>
-
-      {/* Behavioral science callout */}
-      <div className="mt-4 rounded-2xl bg-slate-900 border border-slate-700 p-5">
-        <h3 className="text-sm font-semibold text-slate-300 mb-2">Why nudging works</h3>
-        <p className="text-sm text-slate-500 leading-relaxed">
-          Subtle environmental cues —{' '}
-          <span className="text-amber-400">warmer lighting</span> and{' '}
-          <span className="text-blue-400">directional ambient sound</span> — shift passenger flow
-          without explicit instructions. Passengers self-distribute naturally, reducing crowding
-          by an estimated{' '}
-          <span className="text-emerald-400 font-medium">20–35%</span> in peak hours,
-          with no signage, no apps, and no behavior change required from riders.
-        </p>
-      </div>
+      </main>
     </div>
   )
 }
