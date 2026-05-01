@@ -41,7 +41,7 @@ export default function WagonOccupancy() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/wagon-occupancy')
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/wagon-occupancy`)
       if (!res.ok) throw new Error(`${res.status}`)
       setWagons(await res.json())
     } catch (e) {

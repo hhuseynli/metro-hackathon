@@ -7,6 +7,7 @@ function densityColor(pct) {
 }
 
 export default function PlatformDiagram({ zones, nudge }) {
+  const MAX_PERSONS_PER_WAGON = 315
   const counts = Object.values(zones || {})
   const total = counts.reduce((a, b) => a + b, 0)
 
@@ -38,7 +39,8 @@ export default function PlatformDiagram({ zones, nudge }) {
       {/* Platform zones */}
       <div className="flex flex-row flex-wrap justify-center gap-4">
         {ZONE_LABELS.map((label, i) => {
-          const pct = zones[i] ?? 0
+          const raw = zones[i] ?? 0
+          const pct = Math.round(Math.min((raw / MAX_PERSONS_PER_WAGON) * 100, 100))
           const bg = densityColor(pct)
           const isTarget = nudge?.active && nudge.target_zone === i
 
@@ -58,6 +60,7 @@ export default function PlatformDiagram({ zones, nudge }) {
               <div className="relative z-10 flex flex-col items-center">
                 <span className="text-4xl font-black text-white tracking-tighter drop-shadow-sm">{pct}%</span>
                 <span className="text-[11px] font-black text-white/90 uppercase tracking-widest">{label}</span>
+                <span className="text-[10px] text-white/80 mt-1">{raw} persons</span>
               </div>
               
               {/* Decorative line */}

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
+
 export function useCameras() {
   const [cameras, setCameras] = useState({})
 
   useEffect(() => {
-    fetch('/api/cameras')
+    fetch(`${API_BASE}/api/cameras`)
       .then(r => r.json())
       .then(setCameras)
       .catch(() => {})
@@ -30,7 +32,7 @@ export function useAnalysis() {
     setPreviewUrl(null)
     setPersonCount(null)
     try {
-      const res = await fetch('/api/preview', {
+      const res = await fetch(`${API_BASE}/api/preview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder, filename, frame_pct: framePct }),
@@ -52,7 +54,7 @@ export function useAnalysis() {
     setJob(null)
     clearInterval(pollRef.current)
     try {
-      const res = await fetch('/api/track', {
+      const res = await fetch(`${API_BASE}/api/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder, filename, seconds }),
@@ -61,7 +63,7 @@ export function useAnalysis() {
       setJob({ job_id, status: 'queued', total_in: 0, total_out: 0 })
 
       pollRef.current = setInterval(async () => {
-        const r = await fetch(`/api/track/${job_id}`)
+        const r = await fetch(`${API_BASE}/api/track/${job_id}`)
         const data = await r.json()
         setJob({ job_id, ...data })
         if (data.status === 'done' || data.status === 'error') {

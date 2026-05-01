@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-const API_BASE = ''  // proxied through Vite → http://localhost:8000
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
 export function useMetroData(intervalMs = 2000) {
   const [zones, setZones] = useState({ zones: {}, frame_count: 0, mode: 'connecting', fps: 0 })

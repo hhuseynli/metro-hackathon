@@ -13,6 +13,7 @@ import cv2
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from scripts.nudge_engine import decide_nudge
@@ -37,9 +38,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CAMERA_ROOT = Path(__file__).parent.parent / "data" / "Camera"
-OUTPUTS_DIR = Path(__file__).parent / "outputs"
+CAMERA_ROOT = Path(os.environ.get("CAMERA_ROOT", str(Path(__file__).parent.parent / "data" / "Camera")))
+OUTPUTS_DIR = Path(os.environ.get("OUTPUTS_DIR", str(Path(__file__).parent / "outputs")))
 OUTPUTS_DIR.mkdir(exist_ok=True)
+
+FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
 
 # ---------------------------------------------------------------------------
 # Zone / nudge state (live / precomputed / demo)
@@ -466,4 +469,11 @@ def wagon_occupancy():
 
 @app.get("/")
 def root():
+    if FRONTEND_DIST.exists():
+        return FileResponse(str(FRONTEND_DIST / "index.html"))
     return {"message": "Metro Platform API", "docs": "/docs"}
+
+
+# Serve built React frontend (must be last — catches all remaining routes)
+if FRONTEND_DIST.exists():
+    app.mount("/", StaticFiles(directory=str(FRONTEND_DIST), html=True), name="frontend")
