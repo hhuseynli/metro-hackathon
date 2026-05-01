@@ -1,6 +1,8 @@
 import { useMetroData } from './hooks/useMetroData'
 import PlatformDiagram from './components/PlatformDiagram'
 import StatusBar from './components/StatusBar'
+import AnalysisPanel from './components/AnalysisPanel'
+import WagonOccupancy from './components/WagonOccupancy'
 
 function App() {
   const { zones, nudge, stats, error } = useMetroData()
@@ -41,9 +43,15 @@ function App() {
       </div>
 
       {/* Main Content - Centered */}
-      <main className="flex-1 flex flex-col items-center mt-6">
+      <main className="flex-1 flex flex-col items-center mt-6 gap-8">
         <div className="max-w-5xl w-full">
           <PlatformDiagram zones={zones.zones || {}} nudge={nudge} />
+        </div>
+        <div className="max-w-5xl w-full">
+          <WagonOccupancy />
+        </div>
+        <div className="max-w-5xl w-full">
+          <AnalysisPanel />
         </div>
       </main>
     </div>
