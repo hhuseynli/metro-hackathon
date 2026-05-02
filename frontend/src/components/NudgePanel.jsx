@@ -9,25 +9,25 @@ export default function NudgePanel({ nudge }) {
     }`}>
       <div className="flex items-center gap-3 mb-3">
         <div className={`w-3 h-3 rounded-full ${active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-        <h2 className="text-lg font-semibold text-slate-800">Nudge Engine</h2>
+        <h2 className="text-lg font-semibold text-slate-800">Yönləndirmə sistemi</h2>
       </div>
 
       {active ? (
         <div className="space-y-3">
           <div className="flex gap-2 flex-wrap">
-            <Chip color="emerald">Active</Chip>
+            <Chip color="emerald">Aktiv</Chip>
             <Chip color="amber">{nudge.nudge_type}</Chip>
             <Chip color="sky">{nudge.intensity}</Chip>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <InfoRow label="Target zone" value={`Zone ${nudge.target_zone} → Car ${nudge.target_car}`} />
-            <InfoRow label="Crowded zone" value={`Zone ${nudge.overcrowded_zone} → Car ${nudge.overcrowded_car}`} />
-            <InfoRow label="Density ratio" value={`${nudge.ratio}×`} />
+            <InfoRow label="Hədəf zona" value={`Zona ${nudge.target_zone} → Vaqon ${nudge.target_car}`} />
+            <InfoRow label="Sıx zona" value={`Zona ${nudge.overcrowded_zone} → Vaqon ${nudge.overcrowded_car}`} />
+            <InfoRow label="Sıxlıq nisbəti" value={`${nudge.ratio}×`} />
           </div>
 
           <div className="rounded-xl bg-white border border-emerald-200 p-3 shadow-sm">
-            <p className="text-xs text-emerald-700 font-medium mb-1">Passenger message (ambient):</p>
+            <p className="text-xs text-emerald-700 font-medium mb-1">Sərnişin mesajı (dolayı):</p>
             <p className="text-sm text-slate-700">{nudge.messages?.az}</p>
             <p className="text-xs text-slate-500 mt-0.5">{nudge.messages?.en}</p>
           </div>
@@ -35,9 +35,9 @@ export default function NudgePanel({ nudge }) {
       ) : (
         <div className="text-center py-4">
           <div className="text-3xl mb-1">✓</div>
-          <p className="text-slate-600 text-sm">Distribution balanced</p>
+          <p className="text-slate-600 text-sm">Paylanma balanslıdır</p>
           {nudge?.ratio && (
-            <p className="text-slate-500 text-xs mt-1">Max/min ratio: {nudge.ratio}×</p>
+            <p className="text-slate-500 text-xs mt-1">Maks/min nisbəti: {nudge.ratio}×</p>
           )}
         </div>
       )}

@@ -11,20 +11,15 @@ import StationDetail from './components/StationDetail'
 
 const TABS = [
   { id: 'map',      label: 'Xəritə'     },
-  { id: 'platform', label: 'Platform'   },
+  { id: 'platform', label: 'Platforma'  },
   { id: 'stats',    label: 'Statistika' },
-  { id: 'analysis', label: 'Analiz'     },
+  { id: 'analysis', label: 'Təhlil'     },
 ]
 
 function App() {
   const { zones, nudge, stats, error } = useMetroData()
   const [activeTab, setActiveTab]         = useState('map')
   const [selectedStation, setSelectedStation] = useState(null)
-
-  const handleSelectStation = (info) => {
-    setSelectedStation(info)
-    // Auto-switch to map tab if selecting from elsewhere
-  }
 
   return (
     <div className="h-[100dvh] flex flex-col bg-white overflow-hidden">

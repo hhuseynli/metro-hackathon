@@ -27,7 +27,7 @@ export default function AnalysisPanel() {
 
   return (
     <div className="border border-slate-200 rounded-xl p-6 bg-white">
-      <h2 className="text-lg font-bold text-slate-800 mb-4">Camera Analysis</h2>
+      <h2 className="text-lg font-bold text-slate-800 mb-4">Kamera təhlili</h2>
 
       {/* Selectors */}
       <div className="flex flex-wrap gap-3 mb-5">
@@ -36,7 +36,7 @@ export default function AnalysisPanel() {
           value={folder}
           onChange={handleFolderChange}
         >
-          <option value="">— Folder —</option>
+          <option value="">— Qovluq —</option>
           {folders.map(f => <option key={f} value={f}>{f}</option>)}
         </select>
 
@@ -54,7 +54,7 @@ export default function AnalysisPanel() {
       {/* Preview controls */}
       <div className="flex flex-wrap items-center gap-4 mb-5 pb-5 border-b border-slate-100">
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 font-medium">Frame</label>
+          <label className="text-xs text-slate-500 font-medium">Kadr</label>
           <input
             type="range" min="0" max="1" step="0.01"
             value={framePct}
@@ -69,11 +69,11 @@ export default function AnalysisPanel() {
           disabled={!filename || loading}
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
         >
-          Preview Frame
+          Kadrı önizlə
         </button>
 
         {personCount && (
-          <span className="text-sm font-bold text-slate-700">{personCount} persons</span>
+          <span className="text-sm font-bold text-slate-700">{personCount} nəfər</span>
         )}
       </div>
 
@@ -89,14 +89,14 @@ export default function AnalysisPanel() {
       {/* Track controls */}
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 font-medium">Analyse first</label>
+          <label className="text-xs text-slate-500 font-medium">İlk müddəti təhlil et</label>
           <input
             type="number" min="5" max="600" step="5"
             value={seconds}
             onChange={e => setSeconds(parseInt(e.target.value))}
             className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-20 text-center"
           />
-          <span className="text-xs text-slate-400">sec</span>
+          <span className="text-xs text-slate-400">san</span>
         </div>
 
         <button
@@ -104,7 +104,7 @@ export default function AnalysisPanel() {
           disabled={!filename || loading}
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-sky-600 text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed hover:bg-sky-500 transition-colors"
         >
-          {loading && job?.status === 'running' ? 'Tracking…' : 'Track IN / OUT'}
+          {loading && job?.status === 'running' ? 'İzlənir…' : 'Giriş / çıxışı izlə'}
         </button>
 
         {/* Job result */}
@@ -126,7 +126,7 @@ export default function AnalysisPanel() {
                 rel="noreferrer"
                 className="text-xs text-blue-500 underline"
               >
-                Download video
+                Videonu yüklə
               </a>
             )}
             {job.status === 'error' && (

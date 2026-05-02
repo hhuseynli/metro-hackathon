@@ -13,7 +13,7 @@ function WagonBar({ wagon, data }) {
       <div className="flex items-center justify-between mb-1">
         <span className="text-sm font-semibold text-slate-700">{wagon}</span>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400">{data.persons} persons</span>
+          <span className="text-xs text-slate-400">{data.persons} nəfər</span>
           <span className={`text-sm font-bold tabular-nums ${text}`}>
             {data.percentage}%
           </span>
@@ -26,7 +26,7 @@ function WagonBar({ wagon, data }) {
         />
       </div>
       <p className="text-[10px] text-slate-400 mt-0.5">
-        {data.cameras_sampled} camera{data.cameras_sampled !== 1 ? 's' : ''} · capacity {data.capacity}
+        {data.cameras_sampled} kamera{data.cameras_sampled !== 1 ? 'lar' : ''} · tutum {data.capacity}
       </p>
     </div>
   )
@@ -45,7 +45,7 @@ export default function WagonOccupancy() {
       if (!res.ok) throw new Error(`${res.status}`)
       setWagons(await res.json())
     } catch (e) {
-      setError('Failed: ' + e.message)
+      setError('Uğursuz oldu: ' + e.message)
     } finally {
       setLoading(false)
     }
@@ -55,15 +55,15 @@ export default function WagonOccupancy() {
     <div className="border border-slate-200 rounded-xl p-6 bg-white">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-lg font-bold text-slate-800">Wagon Occupancy</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Based on YOLO detection · max 315 persons per wagon</p>
+          <h2 className="text-lg font-bold text-slate-800">Vaqon doluluğu</h2>
+          <p className="text-xs text-slate-400 mt-0.5">YOLO aşkarlanmasına əsasən · hər vaqon üçün maksimum 315 nəfər</p>
         </div>
         <button
           onClick={run}
           disabled={loading}
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white disabled:opacity-40 hover:bg-slate-700 transition-colors"
         >
-          {loading ? 'Analysing…' : wagons ? 'Refresh' : 'Run Analysis'}
+          {loading ? 'Təhlil edilir…' : wagons ? 'Yenilə' : 'Təhlilə başla'}
         </button>
       </div>
 
@@ -84,11 +84,11 @@ export default function WagonOccupancy() {
             return (
               <div className="mt-4 rounded-lg bg-slate-50 border border-slate-200 p-3">
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  <span className="font-semibold text-slate-800">Imbalance: </span>
-                  Most occupied wagon at{' '}
+                  <span className="font-semibold text-slate-800">Uyğunsuzluq: </span>
+                  Ən dolu vaqon{' '}
                   <span className="font-bold text-red-500">{max}%</span>, least at{' '}
                   <span className="font-bold text-emerald-600">{min}%</span> —{' '}
-                  a <span className="font-bold text-orange-500">{ratio}× gap</span>.
+                  <span className="font-bold text-orange-500">{ratio}× fərq</span>.
                 </p>
               </div>
             )
@@ -97,7 +97,7 @@ export default function WagonOccupancy() {
       )}
 
       {wagons && Object.keys(wagons).length === 0 && (
-        <p className="text-sm text-slate-400">No train camera footage found.</p>
+        <p className="text-sm text-slate-400">Qatar kamerası görüntüsü tapılmadı.</p>
       )}
     </div>
   )

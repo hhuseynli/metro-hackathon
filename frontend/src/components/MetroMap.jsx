@@ -260,7 +260,7 @@ export default function MetroMap({ onSelect, fullscreen = false }) {
                   }} />
                 </div>
                 <p className="text-[10px] text-slate-400 mt-1">
-                  {Math.round((pax.avg / 750) * 100)}% of peak
+                  Zirvənin {Math.round((pax.avg / 750) * 100)}%-i
                 </p>
               </div>
             </div>

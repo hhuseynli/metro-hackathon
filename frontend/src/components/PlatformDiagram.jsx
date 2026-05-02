@@ -60,7 +60,7 @@ export default function PlatformDiagram({ zones, nudge }) {
               <div className="relative z-10 flex flex-col items-center">
                 <span className="text-4xl font-black text-white tracking-tighter drop-shadow-sm">{pct}%</span>
                 <span className="text-[11px] font-black text-white/90 uppercase tracking-widest">{label}</span>
-                <span className="text-[10px] text-white/80 mt-1">{raw} persons</span>
+                <span className="text-[10px] text-white/80 mt-1">{raw} nəfər</span>
               </div>
               
               {/* Decorative line */}
