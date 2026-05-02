@@ -22,10 +22,10 @@ const STATION_AZ = {
 // Folders where in/out tracking makes sense
 const TRACKING_FOLDERS = new Set(['Entrance', 'Escalator', 'Turnstile'])
 
-// Pre-computed tracked demo videos per folder
+// Pre-computed tracked demo videos served from public/videos/ (no backend proxy)
 const FOLDER_DEMO_VIDEO = {
-  Escalator: '28MAY11 ESKALATOR UST-16.04.2026 SAAT 08.45_tracked.mp4',
-  Entrance:  '28MAY02 GIRIS POLIS-16.04.2026 SAAT 18.00_tracked.mp4',
+  Escalator: '/videos/28MAY11 ESKALATOR UST-16.04.2026 SAAT 08.45_tracked.mp4',
+  Entrance:  '/videos/28MAY02 GIRIS POLIS-16.04.2026 SAAT 18.00_tracked.mp4',
 }
 
 function formatFilename(name) {
@@ -82,9 +82,7 @@ export default function AnalysisPanel() {
   const supportsTracking = TRACKING_FOLDERS.has(folder)
   const MAX_SEC          = 30
 
-  const demoVideo = folder && FOLDER_DEMO_VIDEO[folder]
-    ? `${API_BASE}/api/outputs/${encodeURIComponent(FOLDER_DEMO_VIDEO[folder])}`
-    : null
+  const demoVideo = FOLDER_DEMO_VIDEO[folder] ?? null
 
   const handleFolderChange = (e) => {
     setFolder(e.target.value)

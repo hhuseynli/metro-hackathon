@@ -245,7 +245,7 @@ def _run_tracking(job_id: str, video_path: str, seconds: float | None):
         jobs[job_id] = {'status': 'error', 'error': f'Cannot open {video_path}'}
         return
 
-    fps          = cap.get(cv2.CAP_PROP_FPS) or 25.0
+    fps          = min(cap.get(cv2.CAP_PROP_FPS) or 25.0, 60.0)
     w            = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     h            = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
