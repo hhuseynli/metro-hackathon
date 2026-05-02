@@ -194,13 +194,13 @@ def precomputed_loop(json_path: str):
 
 def demo_loop():
     state['mode'] = 'demo'
-    base = [18, 15, 9, 4, 3]
+    base = [22, 19, 16, 13, 11]
     drift = [0] * N_ZONES
     while True:
         counts = {}
         for i in range(N_ZONES):
-            drift[i] += random.randint(-2, 2)
-            drift[i] = max(-5, min(5, drift[i]))
+            drift[i] += random.randint(-1, 1)
+            drift[i] = max(-3, min(3, drift[i]))
             counts[i] = max(0, base[i] + drift[i])
         state['zone_counts'] = counts
         state['nudge'] = decide_nudge(counts)
