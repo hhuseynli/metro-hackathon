@@ -1,8 +1,8 @@
 const ZONE_LABELS = ['Vaqon 1', 'Vaqon 2', 'Vaqon 3', 'Vaqon 4', 'Vaqon 5']
 
 function densityColor(pct) {
-  if (pct >= 70) return 'bg-red-600'
-  if (pct >= 40) return 'bg-yellow-500'
+  if (pct >= 80) return 'bg-red-600'
+  if (pct >= 60) return 'bg-yellow-500'
   return 'bg-emerald-500'
 }
 
@@ -76,9 +76,9 @@ export default function PlatformDiagram({ zones, nudge }) {
       {/* Legend */}
       <div className="flex gap-10 mt-10 justify-center">
         {[
-          { color: 'bg-emerald-500', label: '<40%', desc: 'Aşağı Sıxlıq' },
-          { color: 'bg-yellow-500', label: '40-70%', desc: 'Orta' },
-          { color: 'bg-red-600',    label: '≥70%', desc: 'Yüksək Sıxlıq' },
+          { color: 'bg-emerald-500', label: '<60%', desc: 'Aşağı Sıxlıq' },
+          { color: 'bg-yellow-500', label: '60-80%', desc: 'Orta' },
+          { color: 'bg-red-600',    label: '≥80%', desc: 'Yüksək Sıxlıq' },
         ].map(({ color, label, desc }) => (
           <div key={label} className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${color} shadow-sm`} />
