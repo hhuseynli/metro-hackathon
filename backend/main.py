@@ -41,9 +41,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_DEMO_DATA = Path(__file__).parent.parent / "demo-data"
+
 CAMERA_ROOT = Path(os.environ.get("CAMERA_ROOT", str(Path(__file__).parent.parent / "data" / "Camera")))
-OUTPUTS_DIR = Path(os.environ.get("OUTPUTS_DIR", str(Path(__file__).parent / "outputs")))
-OUTPUTS_DIR.mkdir(exist_ok=True)
+OUTPUTS_DIR = Path(os.environ.get("OUTPUTS_DIR", str(_DEMO_DATA / "outputs")))
+OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
+
+KEY_STAT_PATH = Path(os.environ.get("KEY_STAT_PATH", str(_DEMO_DATA / "key_stat.json")))
 
 FRONTEND_DIST = Path(__file__).parent.parent / "frontend" / "dist"
 
@@ -60,7 +64,6 @@ state = {
     'fps': 0.0,
 }
 
-KEY_STAT_PATH = Path(__file__).parent / 'key_stat.json'
 _key_stat_default = {
     "avg_imbalance_pct": 43.2,
     "most_crowded_car_avg": 78.4,

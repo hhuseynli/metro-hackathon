@@ -1,0 +1,7 @@
+{
+  "avg_imbalance_pct": 43.2,
+  "most_crowded_car_avg": 78.4,
+  "least_crowded_car_avg": 31.1,
+  "ratio": 2.5,
+  "train_visits_analyzed": 284
+}

@@ -7,7 +7,12 @@ from __future__ import annotations
 from pathlib import Path
 import pandas as pd
 
-_DATA_PATH = Path(__file__).parent.parent.parent / "data" / "Data" / "total_data_15min.csv"
+_DATA_PATH = Path(
+    __import__("os").environ.get(
+        "PASSENGER_DATA_PATH",
+        str(Path(__file__).parent.parent.parent / "demo-data" / "Data" / "total_data_15min.csv"),
+    )
+)
 _df: pd.DataFrame | None = None
 _peaks: dict[str, float] = {}
 
