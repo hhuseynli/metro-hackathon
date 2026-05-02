@@ -99,7 +99,7 @@ function App() {
             <div className="h-full overflow-y-auto">
               <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 pb-safe">
                 <StatusBar mode={zones.mode} frameCount={zones.frame_count} fps={zones.fps} error={error} />
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-4">
                   <PlatformDiagram zones={zones.zones || {}} nudge={nudge} />
                   <NudgePanel nudge={nudge} />
                 </div>
