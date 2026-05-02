@@ -22,5 +22,5 @@ backend/zone_counts.json
 backend/*.avi
 backend/outputs
 
-# Large video outputs
-demo-data/outputs/*.mp4
+# Large video outputs (analyzed > 100MB)
+demo-data/outputs/*_analyzed.mp4

@@ -1,5 +1,12 @@
 import { useCameras, useAnalysis } from '../hooks/useAnalysis'
 
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
+
+function trackedVideoUrl(filename) {
+  const videoName = filename.replace(/_detection\.jpg$/i, '_tracked.mp4')
+  return `${API_BASE}/api/outputs/${encodeURIComponent(videoName)}`
+}
+
 const FOLDER_AZ = {
   Entrance:  'Giriş',
   Escalator: 'Eskalator',
@@ -112,6 +119,25 @@ export default function AnalysisPanel() {
           alt="Detection preview"
           className="rounded-lg w-full object-contain max-h-80 mb-5 border border-slate-100"
         />
+      )}
+
+      {/* Tracked video — auto-shown when a file with a matching tracked video is selected */}
+      {filename && (
+        <div className="mb-5">
+          <p className="text-xs text-slate-500 font-semibold uppercase tracking-wide mb-2">Giriş / Çıxış İzlənməsi</p>
+          <video
+            key={filename}
+            src={trackedVideoUrl(filename)}
+            controls
+            autoPlay
+            loop
+            muted
+            className="rounded-lg w-full border border-slate-100 bg-slate-900"
+            onError={e => { e.currentTarget.style.display = 'none' }}
+            onCanPlay={e => { e.currentTarget.style.display = 'block' }}
+            style={{ display: 'none' }}
+          />
+        </div>
       )}
 
       {/* Track controls */}
