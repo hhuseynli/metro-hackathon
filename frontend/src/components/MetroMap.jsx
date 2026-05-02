@@ -184,9 +184,6 @@ export default function MetroMap({ onSelect, fullscreen = false }) {
             </div>
           ))}
         </div>
-        <p className="absolute top-3 left-3 z-10 text-[10px] text-slate-400 bg-white/80 px-2 py-1 rounded-lg backdrop-blur-sm">
-          Stansiyaya klikləyin
-        </p>
         <div className="w-full h-full overflow-auto">
           <svg
             viewBox="0 0 800 560"
@@ -205,7 +202,6 @@ export default function MetroMap({ onSelect, fullscreen = false }) {
       <div className="px-6 pt-5 pb-2 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold text-slate-800">Metro Xəritəsi</h2>
-          <p className="text-xs text-slate-400 mt-0.5">Stansiyaya klikləyin</p>
         </div>
         <div className="flex flex-wrap gap-4">
           {Object.entries(LC).map(([k, c]) => (
