@@ -71,10 +71,10 @@ function App() {
           <div className={`absolute inset-0 transition-opacity duration-200 ${activeTab === 'map' ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
             <MetroMap onSelect={setSelectedStation} fullscreen />
 
-            {/* Station detail overlay — slides up from bottom */}
-            <div className={`absolute inset-x-0 bottom-0 z-10 transition-transform duration-300 ease-out ${selectedStation ? 'translate-y-0' : 'translate-y-full'}`}>
+            {/* Station detail overlay — fullscreen slide up */}
+            <div className={`absolute inset-0 z-10 transition-transform duration-300 ease-out ${selectedStation ? 'translate-y-0' : 'translate-y-full'}`}>
               {selectedStation && (
-                <div className="p-3 md:p-4 max-h-[65vh] overflow-y-auto">
+                <div className="h-full overflow-y-auto bg-white p-3 md:p-6">
                   <StationDetail
                     stationId={selectedStation.apiId}
                     stationName={selectedStation.name}
