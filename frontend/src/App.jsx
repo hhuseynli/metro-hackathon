@@ -2,19 +2,16 @@ import { useState } from 'react'
 import { useMetroData } from './hooks/useMetroData'
 import StatusBar from './components/StatusBar'
 import AnalysisPanel from './components/AnalysisPanel'
-import WagonOccupancy from './components/WagonOccupancy'
 import MetroMap from './components/MetroMap'
-import StatsPanel from './components/StatsPanel'
 import StationDetail from './components/StationDetail'
 
 const TABS = [
-  { id: 'map',      label: 'Xəritə'     },
-  { id: 'stats',    label: 'Statistika' },
-  { id: 'analysis', label: 'Təhlil'     },
+  { id: 'map',      label: 'Xəritə' },
+  { id: 'analysis', label: 'Təhlil' },
 ]
 
 function App() {
-  const { zones, stats, error } = useMetroData()
+  const { zones, error } = useMetroData()
   const [activeTab, setActiveTab]             = useState('map')
   const [selectedStation, setSelectedStation] = useState(null)
 
@@ -100,16 +97,6 @@ function App() {
               <StatusBar mode={zones.mode} frameCount={zones.frame_count} fps={zones.fps} error={error} compact />
             </div>
           </div>
-
-          {/* STATS */}
-          {activeTab === 'stats' && (
-            <div className="h-full overflow-y-auto">
-              <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 pb-safe">
-                <StatsPanel stats={stats} />
-                <WagonOccupancy />
-              </div>
-            </div>
-          )}
 
           {/* ANALYSIS */}
           {activeTab === 'analysis' && (

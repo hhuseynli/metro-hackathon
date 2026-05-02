@@ -2,7 +2,7 @@ import { useStation } from '../hooks/useMetroData'
 import PlatformDiagram from './PlatformDiagram'
 
 const LC = { red: '#EF4444', green: '#10B981', purple: '#A855F7', yellow: '#CA8A04' }
-const LL = { red: 'I Xətt', green: 'II Xətt', purple: 'III Xətt', yellow: 'Xətai' }
+const LL = { red: 'Qırmızı Xətt', green: 'Yaşıl Xətt', purple: 'Bənövşəyi Xətt', yellow: 'Sarı Xətt' }
 
 function loadColor(pct) {
   if (pct > 75) return '#EF4444'
