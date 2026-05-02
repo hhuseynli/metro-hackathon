@@ -55,10 +55,11 @@ def run_entrance_tracking(job_id: str, video_path: str, seconds: float | None, j
     every_n = 4
 
     stem     = Path(video_path).stem
+    tmp_path = outputs_dir / f"{stem}_tmp.mp4"
     out_path = outputs_dir / f"{stem}_tracked.mp4"
 
     writer = cv2.VideoWriter(
-        str(out_path),
+        str(tmp_path),
         cv2.VideoWriter_fourcc(*"avc1"),
         max(1.0, fps / every_n),
         (w, h),
@@ -163,6 +164,18 @@ def run_entrance_tracking(job_id: str, video_path: str, seconds: float | None, j
 
     cap.release()
     writer.release()
+
+    # Move moov atom to start so browsers can stream without seeking to end
+    import subprocess, shutil
+    ff = shutil.which("ffmpeg")
+    if ff:
+        subprocess.run(
+            [ff, "-i", str(tmp_path), "-c", "copy", "-movflags", "faststart", "-y", str(out_path)],
+            capture_output=True,
+        )
+        tmp_path.unlink(missing_ok=True)
+    else:
+        tmp_path.rename(out_path)
 
     jobs[job_id].update({
         'status': 'done',
