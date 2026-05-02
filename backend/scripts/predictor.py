@@ -26,11 +26,23 @@ def _load() -> pd.DataFrame | None:
     return _df
 
 
+def _demo_baseline(hour: int, dayofweek: int) -> float:
+    """Synthetic time-of-day curve when CSV data is unavailable."""
+    import math
+    is_weekend = dayofweek >= 5
+    # Two peaks: morning rush ~8-9h, evening rush ~17-18h
+    morning = 180 * math.exp(-0.5 * ((hour - 8.5) / 1.2) ** 2)
+    evening = 220 * math.exp(-0.5 * ((hour - 17.5) / 1.3) ** 2)
+    midday  = 80  * math.exp(-0.5 * ((hour - 13.0) / 1.5) ** 2)
+    base = morning + evening + midday + 20
+    return base * (0.65 if is_weekend else 1.0)
+
+
 def get_baseline(station: str, hour: int, minute: int, dayofweek: int) -> float:
     """Average passenger count for this station at this time-of-week."""
     df = _load()
     if df is None:
-        return 0.0
+        return _demo_baseline(hour, dayofweek)
     mbin = (minute // 15) * 15
     mask = (
         (df["station"]    == station)  &

@@ -12,7 +12,7 @@ export default function AnalysisPanel() {
   const {
     folder, setFolder, filename, setFilename,
     framePct, setFramePct, seconds, setSeconds,
-    previewUrl, personCount,
+    previewUrl, personCount, previewError,
     job, loading,
     preview, startTracking,
   } = useAnalysis()
@@ -74,6 +74,9 @@ export default function AnalysisPanel() {
 
         {personCount && (
           <span className="text-sm font-bold text-slate-700">{personCount} nəfər</span>
+        )}
+        {previewError && (
+          <span className="text-sm text-red-500">{previewError}</span>
         )}
       </div>
 

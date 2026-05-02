@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
+
 function occupancyColor(pct) {
   if (pct >= 75) return { bar: 'bg-red-500',    text: 'text-red-500' }
   if (pct >= 50) return { bar: 'bg-orange-400', text: 'text-orange-400' }
@@ -41,7 +43,7 @@ export default function WagonOccupancy() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/wagon-occupancy`)
+      const res = await fetch(`${API_BASE}/api/wagon-occupancy`)
       if (!res.ok) throw new Error(`${res.status}`)
       setWagons(await res.json())
     } catch (e) {

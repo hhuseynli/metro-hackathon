@@ -22,7 +22,8 @@ export function useAnalysis() {
   const [seconds, setSeconds]     = useState(30)
   const [previewUrl, setPreviewUrl] = useState(null)
   const [personCount, setPersonCount] = useState(null)
-  const [job, setJob]             = useState(null)   // {job_id, status, total_in, total_out, video_url}
+  const [previewError, setPreviewError] = useState(null)
+  const [job, setJob]             = useState(null)
   const [loading, setLoading]     = useState(false)
   const pollRef                   = useRef(null)
 
@@ -31,18 +32,22 @@ export function useAnalysis() {
     setLoading(true)
     setPreviewUrl(null)
     setPersonCount(null)
+    setPreviewError(null)
     try {
       const res = await fetch(`${API_BASE}/api/preview`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder, filename, frame_pct: framePct }),
       })
-      if (!res.ok) throw new Error(await res.text())
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ detail: res.statusText }))
+        throw new Error(body.detail || res.statusText)
+      }
       setPersonCount(res.headers.get('X-Person-Count'))
       const blob = await res.blob()
       setPreviewUrl(URL.createObjectURL(blob))
     } catch (e) {
-      console.error('Preview failed:', e)
+      setPreviewError(e.message)
     } finally {
       setLoading(false)
     }
@@ -59,6 +64,12 @@ export function useAnalysis() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ folder, filename, seconds }),
       })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ detail: res.statusText }))
+        setJob({ job_id: null, status: 'error', error: body.detail || res.statusText })
+        setLoading(false)
+        return
+      }
       const { job_id } = await res.json()
       setJob({ job_id, status: 'queued', total_in: 0, total_out: 0 })
 
@@ -72,7 +83,7 @@ export function useAnalysis() {
         }
       }, 1500)
     } catch (e) {
-      console.error('Track failed:', e)
+      setJob({ job_id: null, status: 'error', error: e.message })
       setLoading(false)
     }
   }
@@ -82,7 +93,7 @@ export function useAnalysis() {
   return {
     folder, setFolder, filename, setFilename,
     framePct, setFramePct, seconds, setSeconds,
-    previewUrl, personCount,
+    previewUrl, personCount, previewError,
     job, loading,
     preview, startTracking,
   }
