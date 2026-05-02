@@ -36,11 +36,11 @@ export default function StationDetail({ stationId, stationName, lines }) {
   const data = useStation(stationId)
 
   return (
-    <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
+    <div>
       {/* Header */}
-      <div className="px-6 pt-5 pb-4 border-b border-slate-100">
+      <div className="mb-5">
         <div className="flex items-center gap-3 flex-wrap">
-          <h2 className="text-lg font-bold text-slate-800">{stationName}</h2>
+          <h2 className="text-2xl font-bold text-slate-800">{stationName}</h2>
           {lines.map(l => (
             <span
               key={l}
@@ -55,9 +55,9 @@ export default function StationDetail({ stationId, stationName, lines }) {
       </div>
 
       {!data ? (
-        <div className="px-6 py-10 text-center text-slate-400 text-sm">Yüklənir…</div>
+        <div className="py-10 text-center text-slate-400 text-sm">Yüklənir…</div>
       ) : (
-        <div className="px-6 py-5 space-y-5">
+        <div className="space-y-5">
           {/* Load bar + metrics */}
           <div className="space-y-4">
             <div>
