@@ -76,9 +76,9 @@ export default function PlatformDiagram({ zones, nudge }) {
       {/* Legend */}
       <div className="flex gap-10 mt-10 justify-center">
         {[
-          { color: 'bg-emerald-500', label: '<60%', desc: 'Aşağı Sıxlıq' },
-          { color: 'bg-yellow-500', label: '60-80%', desc: 'Orta' },
-          { color: 'bg-red-600',    label: '≥80%', desc: 'Yüksək Sıxlıq' },
+          { color: 'bg-emerald-500', label: 'Yaşıl', desc: 'Aşağı Sıxlıq' },
+          { color: 'bg-yellow-500', label: 'Sarı',  desc: 'Orta' },
+          { color: 'bg-red-600',    label: 'Qırmızı', desc: 'Yüksək Sıxlıq' },
         ].map(({ color, label, desc }) => (
           <div key={label} className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${color} shadow-sm`} />
