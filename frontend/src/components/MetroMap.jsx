@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-const LC = { red: '#EF4444', green: '#10B981', purple: '#A855F7', yellow: '#CA8A04' }
-const LL = { red: 'I Xətt', green: 'II Xətt', purple: 'III Xətt', yellow: 'Xətai' }
+const LC = { red: '#EF4444', green: '#10B981', purple: '#A855F7', yellow: '#6EE7B7' }
+const LL = { red: 'Qırmızı Xətt', green: 'Yaşıl Xətt', purple: 'Bənövşəyi Xətt', yellow: 'Xətai Xətti' }
 
 const PAX = {
   icherisheher:  { avg: 261, max: 1696 },
