@@ -32,13 +32,13 @@ function MetricBox({ label, value, accent }) {
   )
 }
 
-export default function StationDetail({ stationId, stationName, lines, onClose }) {
+export default function StationDetail({ stationId, stationName, lines }) {
   const data = useStation(stationId)
 
   return (
     <div className="border border-slate-200 rounded-xl bg-white overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="px-6 pt-5 pb-4 flex items-center justify-between border-b border-slate-100">
+      <div className="px-6 pt-5 pb-4 border-b border-slate-100">
         <div className="flex items-center gap-3 flex-wrap">
           <h2 className="text-lg font-bold text-slate-800">{stationName}</h2>
           {lines.map(l => (
@@ -52,12 +52,6 @@ export default function StationDetail({ stationId, stationName, lines, onClose }
           ))}
           <span className="text-[10px] text-slate-400 font-medium">Canlı məlumat · hər 3 san</span>
         </div>
-        <button
-          onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors shrink-0"
-        >
-          ×
-        </button>
       </div>
 
       {!data ? (
