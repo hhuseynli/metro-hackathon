@@ -1,5 +1,41 @@
 import { useCameras, useAnalysis } from '../hooks/useAnalysis'
 
+const FOLDER_AZ = {
+  Entrance:  'Giriş',
+  Escalator: 'Eskalator',
+  Platform:  'Platforma',
+  Train:     'Qatar',
+  Turnstile: 'Turniket',
+}
+
+const STATION_AZ = {
+  '28MAY':    '28 May',
+  'ELIMLER':  'Elmlar',
+  'KOROGLU':  'Koroğlu',
+  '20YANVAR': '20 Yanvar',
+}
+
+function formatFilename(name) {
+  const base = name.replace(/_detection\.(jpg|mp4)$/i, '')
+
+  // Train cameras: В2-КАМ2_16-04-26_13-00-00
+  const trainMatch = base.match(/^(В\d+)-КАМ(\d+)(?:_\w+)?_\d{2}-\d{2}-\d{2}_(\d{2})-(\d{2})/)
+  if (trainMatch) {
+    return `Vaqon ${trainMatch[1].replace('В', '')} · Kamera ${trainMatch[2]} · ${trainMatch[3]}:${trainMatch[4]}`
+  }
+
+  // Station cameras: STATIONCODE... DD.MM.YYYY SAAT HH.MM
+  const stationMatch = base.match(/^([A-Z0-9]+?)[\s-].*?(\d{2}\.\d{2}\.\d{4})\s+SAAT\s+(\d{2}[.:]\d{2})/)
+  if (stationMatch) {
+    const code    = Object.keys(STATION_AZ).find(k => stationMatch[1].startsWith(k))
+    const station = code ? STATION_AZ[code] : stationMatch[1]
+    const time    = stationMatch[3].replace('.', ':')
+    return `${station} · ${stationMatch[2]} · ${time}`
+  }
+
+  return base
+}
+
 const STATUS_COLOR = {
   queued:  'text-slate-400',
   running: 'text-blue-500',
@@ -11,7 +47,7 @@ export default function AnalysisPanel() {
   const cameras = useCameras()
   const {
     folder, setFolder, filename, setFilename,
-    framePct, setFramePct, seconds, setSeconds,
+    seconds, setSeconds,
     previewUrl, personCount, previewError,
     job, loading,
     preview, startTracking,
@@ -36,8 +72,8 @@ export default function AnalysisPanel() {
           value={folder}
           onChange={handleFolderChange}
         >
-          <option value="">— Qovluq —</option>
-          {folders.map(f => <option key={f} value={f}>{f}</option>)}
+          <option value="">— Məkan —</option>
+          {folders.map(f => <option key={f} value={f}>{FOLDER_AZ[f] ?? f}</option>)}
         </select>
 
         <select
@@ -46,30 +82,19 @@ export default function AnalysisPanel() {
           onChange={e => setFilename(e.target.value)}
           disabled={!folder}
         >
-          <option value="">— Video —</option>
-          {filenames.map(f => <option key={f} value={f}>{f}</option>)}
+          <option value="">— Görüntü —</option>
+          {filenames.map(f => <option key={f} value={f}>{formatFilename(f)}</option>)}
         </select>
       </div>
 
       {/* Preview controls */}
       <div className="flex flex-wrap items-center gap-4 mb-5 pb-5 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-500 font-medium">Kadr</label>
-          <input
-            type="range" min="0" max="1" step="0.01"
-            value={framePct}
-            onChange={e => setFramePct(parseFloat(e.target.value))}
-            className="w-28"
-          />
-          <span className="text-xs text-slate-400 w-8">{Math.round(framePct * 100)}%</span>
-        </div>
-
         <button
           onClick={preview}
           disabled={!filename || loading}
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
         >
-          Kadrı önizlə
+          Önizlə
         </button>
 
         {personCount && (
@@ -110,7 +135,6 @@ export default function AnalysisPanel() {
           {loading && job?.status === 'running' ? 'İzlənir…' : 'Giriş / çıxışı izlə'}
         </button>
 
-        {/* Job result */}
         {job && (
           <div className="flex items-center gap-4">
             <span className={`text-xs font-bold uppercase tracking-wide ${STATUS_COLOR[job.status] || 'text-slate-400'}`}>
@@ -123,12 +147,7 @@ export default function AnalysisPanel() {
               </>
             )}
             {job.status === 'done' && job.video_url && (
-              <a
-                href={job.video_url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-blue-500 underline"
-              >
+              <a href={job.video_url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 underline">
                 Videonu yüklə
               </a>
             )}
