@@ -16,43 +16,46 @@ export function useCameras() {
 }
 
 export function useAnalysis() {
-  const [folder, setFolder]       = useState('')
-  const [filename, setFilename]   = useState('')
-  const [framePct, setFramePct]   = useState(0.5)
-  const [seconds, setSeconds]     = useState(30)
-  const [previewUrl, setPreviewUrl] = useState(null)
+  const [folder, setFolder]           = useState('')
+  const [filename, setFilename]       = useState('')
+  const [seconds, setSeconds]         = useState(30)
+  const [previewUrl, setPreviewUrl]   = useState(null)
   const [personCount, setPersonCount] = useState(null)
   const [previewError, setPreviewError] = useState(null)
-  const [job, setJob]             = useState(null)
-  const [loading, setLoading]     = useState(false)
-  const pollRef                   = useRef(null)
+  const [job, setJob]                 = useState(null)
+  const [loading, setLoading]         = useState(false)
+  const pollRef                       = useRef(null)
 
-  const preview = async () => {
+  // Auto-preview whenever the selected video changes
+  useEffect(() => {
     if (!folder || !filename) return
+    let cancelled = false
+
     setLoading(true)
     setPreviewUrl(null)
     setPersonCount(null)
     setPreviewError(null)
-    try {
-      const res = await fetch(`${API_BASE}/api/preview`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder, filename, frame_pct: framePct }),
+
+    fetch(`${API_BASE}/api/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder, filename, frame_pct: 0.5 }),
+    })
+      .then(async res => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ detail: res.statusText }))
+          throw new Error(body.detail || res.statusText)
+        }
+        const count = res.headers.get('X-Person-Count')
+        if (!cancelled) setPersonCount(count === 'demo' ? null : count)
+        return res.blob()
       })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({ detail: res.statusText }))
-        throw new Error(body.detail || res.statusText)
-      }
-      const count = res.headers.get('X-Person-Count')
-      setPersonCount(count === 'demo' ? null : count)
-      const blob = await res.blob()
-      setPreviewUrl(URL.createObjectURL(blob))
-    } catch (e) {
-      setPreviewError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+      .then(blob => { if (!cancelled) setPreviewUrl(URL.createObjectURL(blob)) })
+      .catch(e => { if (!cancelled) setPreviewError(e.message) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
+  }, [filename]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const startTracking = async () => {
     if (!folder || !filename) return
@@ -93,9 +96,9 @@ export function useAnalysis() {
 
   return {
     folder, setFolder, filename, setFilename,
-    framePct, setFramePct, seconds, setSeconds,
+    seconds, setSeconds,
     previewUrl, personCount, previewError,
     job, loading,
-    preview, startTracking,
+    startTracking,
   }
 }

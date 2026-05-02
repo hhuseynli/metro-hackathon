@@ -556,11 +556,24 @@ def start_tracking(req: TrackRequest):
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {'status': 'queued', 'total_in': 0, 'total_out': 0}
 
-    t = threading.Thread(
-        target=_run_tracking,
-        args=(job_id, str(video_path), req.seconds),
-        daemon=True,
-    )
+    if req.folder == "Entrance":
+        from scripts.entrance_tracker import run_entrance_tracking
+        try:
+            from ultralytics import YOLO as _YOLO
+            from scripts.yolo_utils import CONF as _CONF, IOU as _IOU, IMGSZ as _IMGSZ
+        except ImportError:
+            raise HTTPException(503, "YOLO not available")
+        t = threading.Thread(
+            target=run_entrance_tracking,
+            args=(job_id, str(video_path), req.seconds, jobs, OUTPUTS_DIR, cv2, _YOLO, _CONF, _IOU, _IMGSZ),
+            daemon=True,
+        )
+    else:
+        t = threading.Thread(
+            target=_run_tracking,
+            args=(job_id, str(video_path), req.seconds),
+            daemon=True,
+        )
     t.start()
     return {'job_id': job_id}
 
