@@ -1,6 +1,5 @@
 import { useStation } from '../hooks/useMetroData'
 import PlatformDiagram from './PlatformDiagram'
-import NudgePanel from './NudgePanel'
 
 const LC = { red: '#EF4444', green: '#10B981', purple: '#A855F7', yellow: '#CA8A04' }
 const LL = { red: 'I Xətt', green: 'II Xətt', purple: 'III Xətt', yellow: 'Xətai' }
@@ -89,8 +88,6 @@ export default function StationDetail({ stationId, stationName, lines }) {
           {/* Platform diagram */}
           {data.zones && <PlatformDiagram zones={data.zones} nudge={data.nudge} />}
 
-          {/* Nudge panel */}
-          {data.nudge && <NudgePanel nudge={data.nudge} />}
         </div>
       )}
     </div>

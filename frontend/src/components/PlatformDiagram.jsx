@@ -12,7 +12,7 @@ export default function PlatformDiagram({ zones, nudge }) {
   const maxCount = Math.max(...counts, 1)
 
   return (
-    <div className="rounded-3xl bg-white border border-slate-100 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+    <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Platforma Görünüşü</h2>

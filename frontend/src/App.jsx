@@ -38,7 +38,7 @@ function App() {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto">
-          <div className="p-4 md:p-8 max-w-4xl mx-auto pb-safe">
+          <div className="px-2 py-4 md:px-6 md:py-8 max-w-5xl mx-auto pb-safe">
             <StationDetail
               stationId={selectedStation.apiId}
               stationName={selectedStation.name}
