@@ -453,17 +453,29 @@ def get_station(station_id: str):
 # ---------------------------------------------------------------------------
 # New ML endpoints
 # ---------------------------------------------------------------------------
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/api/cameras")
 def list_cameras():
-    """Return all available camera videos grouped by folder."""
-    if not CAMERA_ROOT.exists():
-        return {}
+    """Return all available camera videos grouped by folder.
+    Falls back to demo detection images when no real videos are found."""
     result = {}
-    for folder in sorted(CAMERA_ROOT.iterdir()):
-        if folder.is_dir():
-            files = sorted(f.name for f in folder.glob("*.avi"))
-            if files:
-                result[folder.name] = files
+    if CAMERA_ROOT.exists():
+        for folder in sorted(CAMERA_ROOT.iterdir()):
+            if folder.is_dir():
+                files = sorted(f.name for f in folder.glob("*.avi"))
+                if files:
+                    result[folder.name] = files
+
+    if not result and OUTPUTS_DIR.exists():
+        for folder in sorted(OUTPUTS_DIR.iterdir()):
+            if folder.is_dir():
+                files = sorted(f.name for f in folder.glob("*.jpg"))
+                if files:
+                    result[folder.name] = files
     return result
 
 
@@ -473,9 +485,27 @@ class PreviewRequest(BaseModel):
     frame_pct: float = 0.5
 
 
+@app.get("/api/outputs/{folder}/{filename}")
+def serve_output_subfolder(folder: str, filename: str):
+    """Serve a detection image from an outputs subfolder."""
+    path = OUTPUTS_DIR / folder / filename
+    if not path.exists():
+        raise HTTPException(404, "Output file not found")
+    media_type = "video/mp4" if filename.endswith(".mp4") else "image/jpeg"
+    return FileResponse(str(path), media_type=media_type)
+
+
 @app.post("/api/preview")
 def preview_frame(req: PreviewRequest):
     """Run single-frame YOLO detection and return annotated JPEG."""
+    # Serve pre-computed demo detection images directly (no YOLO needed)
+    demo_path = OUTPUTS_DIR / req.folder / req.filename
+    if demo_path.exists() and req.filename.lower().endswith('.jpg'):
+        with open(demo_path, 'rb') as f:
+            img_data = f.read()
+        return StreamingResponse(io.BytesIO(img_data), media_type="image/jpeg",
+                                 headers={"X-Person-Count": "demo"})
+
     if not YOLO_AVAILABLE:
         raise HTTPException(503, "YOLO not available")
 

@@ -24,6 +24,13 @@ export function useMetroData(intervalMs = 2000) {
   const [stats, setStats] = useState(null)
   const [error, setError] = useState(null)
 
+  // Keep the backend warm — Render free tier sleeps after 15 min of inactivity
+  useEffect(() => {
+    const ping = () => fetch(`${API_BASE}/api/health`, { mode: 'no-cors' }).catch(() => {})
+    const id = setInterval(ping, 9 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [])
+
   useEffect(() => {
     let alive = true
 
@@ -41,7 +48,7 @@ export function useMetroData(intervalMs = 2000) {
         setStats(s)
         setError(null)
       } catch (e) {
-        if (alive) setError('Backend ilə əlaqə yoxdur — uvicorn :8000 portunda işləyirmi?')
+        if (alive) setError('Backend başlayır, bir az gözləyin…')
       }
     }
 

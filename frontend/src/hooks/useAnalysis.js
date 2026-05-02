@@ -43,7 +43,8 @@ export function useAnalysis() {
         const body = await res.json().catch(() => ({ detail: res.statusText }))
         throw new Error(body.detail || res.statusText)
       }
-      setPersonCount(res.headers.get('X-Person-Count'))
+      const count = res.headers.get('X-Person-Count')
+      setPersonCount(count === 'demo' ? null : count)
       const blob = await res.blob()
       setPreviewUrl(URL.createObjectURL(blob))
     } catch (e) {
