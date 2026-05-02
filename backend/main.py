@@ -444,9 +444,7 @@ def get_station(station_id: str):
         "next_train_min":       next_train,
         "historical_baseline":  round(baseline),
         "zones":                zones,
-        "guidance_zones":       [guidance.get("target_zone")] if guidance.get("active") else [],
-        "guidance_text":        guidance.get("reason", "Distribution balanced"),
-        "guidance_active":      guidance.get("active", False),
+        "nudge":                guidance,
     }
 
 

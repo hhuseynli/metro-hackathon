@@ -1,23 +1,20 @@
 import { useState } from 'react'
 import { useMetroData } from './hooks/useMetroData'
-import PlatformDiagram from './components/PlatformDiagram'
 import StatusBar from './components/StatusBar'
 import AnalysisPanel from './components/AnalysisPanel'
 import WagonOccupancy from './components/WagonOccupancy'
 import MetroMap from './components/MetroMap'
-import NudgePanel from './components/NudgePanel'
 import StatsPanel from './components/StatsPanel'
 import StationDetail from './components/StationDetail'
 
 const TABS = [
   { id: 'map',      label: 'Xəritə'     },
-  { id: 'platform', label: 'Platforma'  },
   { id: 'stats',    label: 'Statistika' },
   { id: 'analysis', label: 'Təhlil'     },
 ]
 
 function App() {
-  const { zones, nudge, stats, error } = useMetroData()
+  const { zones, stats, error } = useMetroData()
   const [activeTab, setActiveTab]             = useState('map')
   const [selectedStation, setSelectedStation] = useState(null)
 
@@ -93,19 +90,6 @@ function App() {
               <StatusBar mode={zones.mode} frameCount={zones.frame_count} fps={zones.fps} error={error} compact />
             </div>
           </div>
-
-          {/* PLATFORM — PlatformDiagram + NudgePanel */}
-          {activeTab === 'platform' && (
-            <div className="h-full overflow-y-auto">
-              <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-4 pb-safe">
-                <StatusBar mode={zones.mode} frameCount={zones.frame_count} fps={zones.fps} error={error} />
-                <div className="flex flex-col gap-4">
-                  <PlatformDiagram zones={zones.zones || {}} nudge={nudge} />
-                  <NudgePanel nudge={nudge} />
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* STATS — StatsPanel + WagonOccupancy */}
           {activeTab === 'stats' && (
