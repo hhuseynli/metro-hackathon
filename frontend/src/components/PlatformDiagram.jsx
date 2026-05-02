@@ -1,14 +1,15 @@
 const ZONE_LABELS = ['Vaqon 1', 'Vaqon 2', 'Vaqon 3', 'Vaqon 4', 'Vaqon 5']
 
 function densityColor(pct) {
-  if (pct > 150) return 'bg-red-600'
-  if (pct > 100) return 'bg-yellow-500'
+  if (pct >= 70) return 'bg-red-600'
+  if (pct >= 40) return 'bg-yellow-500'
   return 'bg-emerald-500'
 }
 
 export default function PlatformDiagram({ zones, nudge }) {
   const counts = Object.values(zones || {})
   const total = counts.reduce((a, b) => a + b, 0)
+  const maxCount = Math.max(...counts, 1)
 
   return (
     <div className="rounded-3xl bg-white border border-slate-100 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
@@ -39,8 +40,7 @@ export default function PlatformDiagram({ zones, nudge }) {
       <div className="flex flex-row flex-wrap justify-center gap-4">
         {ZONE_LABELS.map((label, i) => {
           const raw = zones[i] ?? 0
-          const fairShare = total / 5
-          const pct = fairShare > 0 ? Math.round((raw / fairShare) * 100) : 0
+          const pct = Math.round((raw / maxCount) * 100)
           const bg = densityColor(pct)
           const isTarget = nudge?.active && nudge.target_zone === i
 
@@ -76,9 +76,9 @@ export default function PlatformDiagram({ zones, nudge }) {
       {/* Legend */}
       <div className="flex gap-10 mt-10 justify-center">
         {[
-          { color: 'bg-emerald-500', label: '≤100%', desc: 'Aşağı Sıxlıq' },
-          { color: 'bg-yellow-500', label: '100-150%', desc: 'Orta' },
-          { color: 'bg-red-600',    label: '>150%', desc: 'Yüksək Sıxlıq' },
+          { color: 'bg-emerald-500', label: '<40%', desc: 'Aşağı Sıxlıq' },
+          { color: 'bg-yellow-500', label: '40-70%', desc: 'Orta' },
+          { color: 'bg-red-600',    label: '≥70%', desc: 'Yüksək Sıxlıq' },
         ].map(({ color, label, desc }) => (
           <div key={label} className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${color} shadow-sm`} />
