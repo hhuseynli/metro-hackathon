@@ -2,128 +2,107 @@
 
 ## For Person 2
 
-**Target time:** 5-7 minutes  
-**Format:** Slides + live demo  
-**Judging criteria:** Problem fit, Innovation, Prototype, Impact, Presentation
+**Target:** 5-7 minutes | Slides + live demo | 50 points total across 5 criteria
 
 ---
 
 ## Slide Structure (8 slides)
 
-### Slide 1 — Hook (30 seconds)
+### Slide 1 — Hook (30 sec)
 **Title:** "You've been there."  
-**Visual:** Split image — packed first car vs. empty last car  
-**Script:** "You walk into the metro. The first car is packed — people shoulder to shoulder. You squeeze in. Two cars down, there are empty seats. You didn't know. Nobody told you. This happens every single day, to every single commuter in Baku."
+**Visual:** Split image — packed front car vs. empty rear car  
+**Script:** "You walk into the metro. The first car is packed — people shoulder to shoulder. Two cars down, there are empty seats. You didn't know. Nobody told you. This happens every single day, to every commuter in Baku."
 
 ---
 
-### Slide 2 — The Data (45 seconds)
-**Title:** "[KEY STAT]"  
-**Visual:** Bar chart — car 1 vs car 5 average occupancy  
-**Content:** Fill with Person 4's output:
-> "We analyzed [X] train visits at [station]. Passengers clustering near the entrance results in cars 1-2 averaging [Y]% capacity, while cars 4-5 average [Z]%. That's a [W]x imbalance — every train, every day."
+### Slide 2 — The Data (45 sec)
+**Title:** [KEY STAT — fill from Person 4]  
+**Visual:** Bar chart — most crowded car vs least crowded car average occupancy  
+**Script:** Pause after the number. "That's not a design problem. That's a solvable engineering problem. And we have the data to solve it."
 
-**Script:** Let the stat speak. Pause after revealing the number. "That's not a design problem. That's a solvable engineering problem."
-
----
-
-### Slide 3 — Why Signs Don't Work (30 seconds)
-**Title:** "People don't follow signs."  
-**Visual:** Photo of ignored directional signs in a metro (find a generic one)  
-**Content:** 
-- Cognitive load during commute is high
-- People follow the crowd, not instructions
-- Explicit guidance creates resistance
-
-**Script:** "The obvious solution is signs. But research shows people in transit environments ignore directional signage — especially during rush hour when cognitive load is highest. We needed a different approach."
+> Placeholder until Person 4 delivers:
+> "Across [X] train visits, cars 1-2 average [Y]% capacity. Cars 4-5 average [Z]%. That's a [W]x difference — every train, every day."
 
 ---
 
-### Slide 4 — The Science of Nudging (45 seconds)
-**Title:** "They follow light. They follow sound."  
-**Visual:** Simple diagram — warm light zone vs. cool light zone  
-**Content:**
-- Subtle environmental cues guide behavior without conscious awareness
-- Retail environments have used this for decades
-- Thaler & Sunstein (2008): choice architecture changes behavior without restricting freedom
-- Warmer, slightly brighter lighting → people drift toward it naturally
-- Pleasant ambient sound → people orient toward it subconsciously
-
-**Script:** "Behavioral science tells us people are exquisitely sensitive to their environment — even when they don't know it. Retailers have used lighting and sound to control foot traffic for decades. We applied the same principle to the metro platform."
+### Slide 3 — Why Existing Solutions Fail (30 sec)
+**Title:** "Signs don't work. Announcements are ignored."  
+**Script:** "The obvious fix is directional signs. But during peak hours, passengers follow the crowd, not instructions. Cognitive load is high. People default to the nearest car. The problem persists."
 
 ---
 
-### Slide 5 — Our System (60 seconds)
-**Title:** "How it works"  
-**Visual:** System architecture diagram (from CLAUDE.md)  
-**Content:**
-1. Overhead cameras detect passenger positions on platform → YOLO person detection
-2. Platform divided into zones matching car positions
-3. Historical weight sensor data tells us which zones lead to which car loads
-4. When imbalance detected → subtle lighting warmth + ambient sound shifts toward least crowded zone
-5. Passengers naturally drift → cars load more evenly
-
-**Script:** Walk through each step. Emphasize: "The passenger doesn't see a sign. They don't receive a notification. They just... end up in a better spot."
+### Slide 4 — Our Approach (45 sec)
+**Title:** "What if the system knew before the train arrived?"  
+**Visual:** Timeline: passenger enters → system detects → guidance shown → passenger positions → train arrives → even boarding  
+**Script:** "Our system doesn't react to crowding. It predicts it. Using cameras at every station zone — entrance, escalators, platform, and trains — combined with weight sensor data and the train schedule, we know which cars will be overcrowded before the train even pulls in. And we guide passengers to the right spot in advance."
 
 ---
 
-### Slide 6 — Live Demo (90 seconds)
-**Title:** "Live system"  
-**Visual:** Switch to actual dashboard  
-**Script:** 
-- "Here's our system running on real platform footage from Baku Metro."
-- Point to zone heatmap: "These are live passenger densities across platform zones."
-- Point to nudge indicator: "Zone 4 is currently underloaded. The system has activated a subtle lighting and sound nudge toward that zone."
-- Point to historical panel: "This is backed by [X] train visits of validated data."
+### Slide 5 — How It Works (60 sec)
+**Title:** "Multi-modal sensing. One cohesive system."  
+**Visual:** Architecture diagram (from CLAUDE.md)  
+**Script:** Walk through each layer:
+1. "Cameras at entrances count inflow — how many people are entering"
+2. "Escalator cameras track flow toward the platform"
+3. "Platform cameras detect where passengers are standing — zone by zone"
+4. "Weight sensors give us ground truth: exactly how heavy each car is"
+5. "Schedule data tells us when the next train arrives"
+6. "We synthesize all of this into one number: predicted load per zone at train arrival"
+7. "And we output guidance: direct incoming passengers to zones 3 and 4"
 
 ---
 
-### Slide 7 — Impact (30 seconds)
-**Title:** "What changes"  
-**Content:**
-- More even car loading → reduced dwell time → faster departures
-- Reduced crowding pressure → improved safety at platform edge
-- No infrastructure change required beyond lighting control integration
-- No behavior change required from passengers — system adapts to them
+### Slide 6 — The Output (30 sec)
+**Title:** "Existing infrastructure. No new hardware."  
+**Visual:** Photo of metro directional display → mockup of same display with car load info added  
+**Script:** "The guidance shows on the directional displays passengers already look at when they enter the platform. We're not adding hardware. We're adding intelligence to what's already there."
 
 ---
 
-### Slide 8 — Team (15 seconds)
-**Title:** Team name + members  
-**Keep brief.** End with: "Thank you."
+### Slide 7 — Live Demo (90 sec)
+**Title:** "Live system — [station name]"  
+**Switch to dashboard**  
+**Script:**
+- "Here's our operator dashboard running on real Baku Metro data."
+- Screen 1: "Every station, color-coded by current load. Green is light, red is critical."
+- Click a station → Screen 2: "Here's [station] in detail. Inflow rate, outflow, people currently inside."
+- Point to zone map: "These are live platform zones — darker means more crowded."
+- Point to prediction: "The system predicts this station will be at [X]% when the next train arrives in [Y] minutes."
+- Point to guidance: "So right now it's telling us: direct incoming passengers to zones 3 and 4."
+- "This is backed by [X] train visits of validated weight sensor data."
 
 ---
 
-## Demo Script (during Slide 6)
+### Slide 8 — Impact & Team (30 sec)
+**Title:** "More even trains. Safer platforms. Same infrastructure."  
+**Bullets:**
+- Reduced dwell time → faster departures
+- Lower platform edge crowding → improved safety
+- No passenger behavior change required — system adapts to them
+- Scalable to all 27 stations
 
-1. Open dashboard on laptop connected to display
-2. Point to platform diagram: explain zones
-3. Show live zone counts updating every 2 seconds
-4. Show nudge recommendation panel
-5. Show historical stats: "This is the data that trained our nudge calibration"
-6. One sentence: "This is running on real Baku Metro camera footage, processed by our YOLO pipeline, backed by 15 months of passenger data."
-
----
-
-## Behavioral Science Sources (Person 3 to find full citations)
-
-1. **Thaler & Sunstein (2008)** — *Nudge: Improving Decisions About Health, Wealth, and Happiness* — foundational nudge theory
-2. **Quartier et al. (2014)** — lighting effects on consumer behavior and movement in retail
-3. **Bijsterveld (2008)** or similar — soundscape effects on pedestrian behavior in public spaces
-4. **TfL (Transport for London)** — published nudge experiments on platform distribution (find specific report)
-
-Even citing 2 of these with a one-line summary is enough for the innovation slide.
+**End:** Team names. "Thank you."
 
 ---
 
-## Key Numbers to Slot In (from Person 4)
+## Numbers to Slot In (get from Person 4 by hour 6)
 
-| Placeholder | What to get from Person 4 |
+| Slot | Source |
 |---|---|
-| [X] train visits | Number of rows/visits in weight dataset |
-| [Y]% most crowded car avg | Mean max occupancy across visits |
-| [Z]% least crowded car avg | Mean min occupancy across visits |
+| [X] train visits analyzed | Weight dataset row count / visits |
+| [Y]% most crowded car avg | mean max occupancy across visits |
+| [Z]% least crowded car avg | mean min occupancy across visits |
 | [W]x ratio | Y / Z |
-| [station] | Which station the camera footage is from |
+| Station name for demo | Whichever has the best camera footage |
 
-**Get these by Hour 6 at the latest.**
+---
+
+## Judging Criteria — How We Score
+
+| Criterion | Our answer |
+|---|---|
+| 1. Problem fit | Real Baku Metro data proves the imbalance exists |
+| 2. Innovation | Pre-arrival prediction + multi-modal sensing + existing displays |
+| 3. Prototype | Live YOLO pipeline → FastAPI → React dashboard |
+| 4. User value | Every commuter benefits; no behavior change required |
+| 5. Presentation | Clear narrative: problem → data → system → demo → impact |

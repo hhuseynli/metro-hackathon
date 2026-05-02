@@ -1,7 +1,7 @@
 # Metro Hackathon 2026 — CLAUDE.md
 ## Challenge 4: Perronda sərnişinlərin bərabər paylanması
 
-> Platform passenger distribution optimization using computer vision, weight sensor data, and subtle environmental nudging (lighting + sound) — without passengers knowing they're being guided.
+> A station-level passenger flow dashboard that synthesizes camera (CV), schedule, and weight sensor data to track inflow/outflow, predict station load, and guide passengers to correct platform zones **before the train arrives** — shown on existing metro directional displays.
 
 ---
 
@@ -10,167 +10,191 @@
 **Hackathon:** Metro Hackathon 2026, May 1–3, İçərişəhər station, Baku  
 **Challenge:** #4 — Equal distribution of passengers on the platform along train cars  
 **Team:** 4 people (see TEAM.md)  
-**Time remaining:** ~14 hours of development  
 **Presentation:** Day 3 final
 
-### Core Insight
-Passengers cluster near platform entrances, causing front cars to be 80%+ full while rear cars sit at 35%. We know this from correlated weight sensor data (per-car, per-train-visit) + overhead camera footage. Our system detects this imbalance and subtly adjusts platform lighting and ambient sound to naturally draw passengers toward less crowded zones — without explicit signs or instructions.
+### Core Concept
+The system watches every zone of a metro station — entrance, escalators, platform, trains — using overhead cameras + weight sensors + schedule data. It tracks inflow, outflow, and current people inside. Using the train schedule it predicts the load at the moment of train arrival. Before the train arrives, it directs incoming passengers to specific platform zones — so cars load evenly without passengers needing to think about it.
 
 ### Innovation
-- **Not reactive — predictive:** Historical weight + camera data reveals consistent overcrowding patterns by time-of-day and day-of-week
-- **Behavioral nudging, not instruction:** Lighting warmth and ambient sound shift subtly; passengers self-distribute without realizing
-- **Multi-modal ground truth:** Weight sensors give exact car occupancy; cameras give platform zone occupancy; together they form a closed validation loop
+- Guidance happens **before** the train arrives — passengers position themselves, not scramble at doors
+- Uses **existing display infrastructure** at platform entrances — no new hardware required
+- **Multi-modal sensing** — camera CV counts + weight ground truth + schedule sync = high confidence prediction
+- **Full station visibility** — not just platform, but entrance → escalator → platform → train as one connected flow
 
 ---
 
 ## Tech Stack
 
-### Backend (Person 4)
+### Backend
 - **Language:** Python 3.10+
-- **CV:** YOLOv8 (ultralytics) — person detection on AVI camera footage
-- **Data:** pandas, numpy — weight data correlation, zone mapping
-- **API:** FastAPI — serve zone density + nudge recommendations to frontend
-- **Video:** OpenCV (cv2) — AVI frame processing
+- **CV:** YOLOv8s (ultralytics) — `yolov8s.pt`, conf=0.10, iou=0.7, imgsz=1280
+- **Tracking:** ByteTrack (via ultralytics) for in/out counting
+- **Data:** pandas, numpy, openpyxl
+- **API:** FastAPI + uvicorn
+- **Video:** OpenCV (cv2), avc1/H.264 codec for output
 
-### Frontend (Person 1)
+### Frontend
 - **Framework:** React + Vite
 - **Styling:** Tailwind CSS
-- **Visualization:** Platform zone heatmap, nudge status indicators
-- **Data:** Polling FastAPI every 2s for live zone density
+- **Polling:** fetch every 2s for live zone data
+- **Deployment:** Vercel (frontend) + Render (backend)
+- **Mobile:** responsive, `100dvh` full-screen layout, tab nav works on touch
 
-### Data Files (see DATA.md)
-- `total_data_15min.csv` — 15-min passenger bins, 27 stations, Jan 2025–Mar 2026
-- `Clean_passenger_data_01012025-31032026.csv` — gate-level daily counts
-- `NFC_16_02_2026.csv` / `QR_16_02_2026.csv` / `SC_16_02_2026.csv` — transaction logs Feb 16 2026
-- `Passenger_density_16_02_2026.xlsx` — density data
-- Weight sensor data — per-car per-train-visit with timestamps (separate folder)
-- Camera footage — AVI format, overhead slightly angled, platform coverage
+---
+
+## Data Sources
+
+| Source | What it provides |
+|---|---|
+| Camera — Entrance (AVI) | Inflow count: people entering station |
+| Camera — Escalator (AVI) | Flow rate up/down toward platform |
+| Camera — Platform (AVI) | Zone density: where people stand |
+| Camera — Train (AVI) | Car occupancy estimate |
+| Weight sensor data | Ground truth car occupancy per train visit (timestamped) |
+| Schedule data | Train arrival times per station |
+| total_data_15min.csv | 15-min passenger bins, 27 stations, 15 months |
+| Clean_passenger_data | Gate-level daily counts |
+| NFC/QR/SC transactions | Individual entry events with timestamps |
 
 ---
 
 ## Architecture
 
 ```
-AVI Camera Feed
-      │
-      ▼
-YOLOv8 Person Detection
-      │
-      ▼
-Zone Segmentation (frame divided into N zones = car positions)
-      │
-      ▼
-Density per Zone (persons/m²)
-      │
-      ├──────────────────────────────────┐
-      ▼                                  ▼
-Historical Weight Model            FastAPI Server
-(which zones → which cars          /api/zones  → frontend
- historically overcrowded)         /api/nudge  → nudge recommendation
-      │
-      ▼
-Nudge Decision Engine
-(which zone needs more passengers)
-      │
-      ▼
-Environmental Output
-  - Lighting: warmer/brighter in target zone
-  - Sound: subtle ambient shift toward target zone
+CAMERA FEEDS (AVI)  ←  data/Camera/{Platform,Train,Escalator,Entrance}/
+  Platform   → YOLO zone_detector.py → density per zone (zones 0–4)
+  Train      → YOLO wagon-occupancy  → car occupancy % (В2, В3, В4)
+  Any feed   → analyze_video.py      → ByteTrack IN/OUT count + MP4
+        │
+        ▼
+  SYNTHESIS ENGINE
+  zone_detector  → zone_counts → nudge_engine → guidance nudge
+  predictor.py   → historical baseline (total_data_15min.csv)
+                 → predict_load(inside, inflow_rate, outflow_rate, minutes)
+  flow_engine.py → sliding-window inflow/outflow rates from live events
+        │
+        ▼
+  FASTAPI SERVER  (backend/main.py)
+  GET  /api/zones              → live zone counts + nudge state (platform cam)
+  GET  /api/nudge              → current guidance nudge
+  GET  /api/stats              → key stat JSON (imbalance metrics)
+  GET  /api/status             → mode (live/precomputed/demo), YOLO available
+  GET  /api/stations           → all 27 stations, load_pct from historical baseline
+  GET  /api/station/{id}       → full station: flow, zones, prediction, guidance
+  GET  /api/cameras            → list camera folders + AVI filenames
+  POST /api/preview            → single-frame YOLO detection → annotated JPEG
+  POST /api/track              → start async ByteTrack job → job_id
+  GET  /api/track/{job_id}     → poll job: status, total_in, total_out, video_url
+  GET  /api/outputs/{filename} → serve generated MP4 / JPEG
+  GET  /api/wagon-occupancy    → per-wagon occupancy % (В2/В3/В4 train cameras)
+        │
+        ▼
+  REACT DASHBOARD  (frontend/src/)
+  Tab: Xəritə    → MetroMap full-screen (fullscreen prop), station detail slide-up overlay
+  Tab: Platform  → PlatformDiagram (live zone heatmap) + NudgePanel side-by-side
+  Tab: Statistika → StatsPanel (historical imbalance) + WagonOccupancy
+  Tab: Analiz    → AnalysisPanel (camera explorer + ByteTrack)
+  StatusBar      → compact dot in header on all tabs, full bar in non-map tabs
 ```
 
 ---
 
-## Core Features (MVP — must ship)
+## Backend Startup Modes
 
-### 1. YOLO Zone Detection
-- Load AVI footage with OpenCV
-- Run YOLOv8n (nano — fastest) on each frame
-- Divide frame into 4-6 horizontal zones matching car positions
-- Count persons per zone per frame
-- Output: `{zone_1: 12, zone_2: 4, zone_3: 7, zone_4: 2}` every ~2s
+Set environment variables to control which data source the zone loop uses:
 
-### 2. Weight-Camera Correlation Model
-- Load historical weight data (per car, per train visit, timestamped)
-- Load camera zone density at matching timestamps
-- Map: zone_X on platform → car_Y on train
-- Quantify: average load imbalance (e.g. car 1 = 78%, car 4 = 31%)
-- Output: validated zone→car mapping + imbalance statistics
-
-### 3. Nudge Decision Engine
-- Input: current zone densities + historical zone→car mapping
-- Logic: identify least-crowded car → recommend nudge toward corresponding platform zone
-- Output: `{target_zone: 4, nudge_type: "lighting+sound", intensity: "subtle"}`
-
-### 4. FastAPI Endpoints
-```
-GET /api/zones     → current zone densities
-GET /api/nudge     → current nudge recommendation
-GET /api/stats     → historical imbalance statistics
-GET /api/video     → MJPEG stream with zone overlays (optional)
-```
-
-### 5. React Dashboard
-- Platform diagram with N zones
-- Real-time density heatmap per zone
-- Nudge status: which zone is being nudged, type, intensity
-- Historical stats panel: "Car 1 is 2.3x more crowded than Car 4 on Monday mornings"
-- Behavioral science callout: why nudging works without explicit instruction
-
----
-
-## Stretch Features (only if time allows)
-
-- Live MJPEG video stream with YOLO bounding boxes + zone overlays
-- Time-of-day prediction: "In 15 minutes, zone A will become crowded based on historical patterns"
-- Mobile notification mockup (passenger receives "walk to far end" via NFC tap)
-
----
-
-## Judging Criteria Alignment
-
-| Criterion | Our approach | Target score |
+| Env var | Value | Mode |
 |---|---|---|
-| 1. Problem-solution fit | Real Baku Metro data, validated imbalance pattern | 9/10 |
-| 2. Innovation | Behavioral nudging (not signs), multi-modal sensing | 9/10 |
-| 3. Working prototype | Live YOLO pipeline → FastAPI → React dashboard | 8/10 |
-| 4. User value & impact | Every commuter feels this daily, no behavior change required | 9/10 |
-| 5. Presentation | Person 2 owns this, narrative built around the key stat | 9/10 |
+| `VIDEO_PATH` | path to AVI | Live YOLO on platform camera |
+| `ZONE_JSON` | path to JSON | Precomputed zone samples (from `zone_detector.py`) |
+| _(neither)_ | — | Demo mode — synthetic drifting counts |
+
+Other env vars:
+- `CAMERA_ROOT` — path to `data/Camera/` (default: `../../data/Camera` relative to main.py)
+- `OUTPUTS_DIR` — where tracked MP4s are written (default: `backend/outputs/`)
 
 ---
 
-## Key Stat to Derive (Person 4 + Person 3 priority)
-> "Across X train visits at [station], passengers clustering in platform zones A-B results in cars 1-2 averaging Y% capacity while cars 4-5 average Z% — a W% imbalance. Our nudge system targets this gap."
+## Core Features — Status
 
-This single validated number is the foundation of the entire presentation.
+- [x] YOLO on platform AVI → zone person counts (`zone_detector.py`)
+- [x] ByteTrack IN/OUT counting with direction detection (`analyze_video.py`)
+- [x] Single-frame preview with person count (`preview_detection.py`)
+- [x] Wagon occupancy from train cameras (`/api/wagon-occupancy`)
+- [x] Historical baseline from `total_data_15min.csv` (`predictor.py`)
+- [x] Sliding-window flow engine (`flow_engine.py`)
+- [x] All 27 stations with load estimates (`/api/stations`, `/api/station/{id}`)
+- [x] Guidance nudge engine (`nudge_engine.py`)
+- [x] Key stat JSON (`key_stat.json` / `/api/stats`)
+- [x] Metro map SVG (3 lines, clickable stations, passenger stats)
+- [x] Live platform zone heatmap (PlatformDiagram)
+- [x] Camera analysis panel (AnalysisPanel)
+- [x] Wagon occupancy panel (WagonOccupancy)
+- [x] Station detail view (StationDetail — zone bars, load %, prediction, guidance, slide-up overlay)
+- [x] Tab navigation (Xəritə / Platform / Statistika / Analiz)
+- [x] Full-screen map tab with slide-up station detail overlay
+- [x] NudgePanel and StatsPanel wired into app
+- [x] Mobile-responsive layout (`100dvh`, touch-friendly tabs, scrollable content)
+
+---
+
+## Fallback Data Strategy
+If live YOLO pipeline is unstable during demo:
+- Pre-process one AVI clip with `zone_detector.py` → save as `zone_counts.json`
+- Start server with `ZONE_JSON=zone_counts.json` — serves in loop
+- Transaction data (NFC/QR/SC) used as inflow proxy if entrance cam fails
+- `total_data_15min.csv` drives all 27-station load estimates at any time
+
+---
+
+## Key Stat
+Stored in `backend/key_stat.json`. Default fallback values are hardcoded in `main.py`.
+```json
+{
+  "avg_imbalance_pct": 43.2,
+  "most_crowded_car_avg": 78.4,
+  "least_crowded_car_avg": 31.1,
+  "ratio": 2.5,
+  "train_visits_analyzed": 284
+}
+```
 
 ---
 
 ## Commands
 
 ```bash
-# Setup
-pip install ultralytics opencv-python fastapi uvicorn pandas numpy openpyxl
+# Setup (inside backend/)
+pip install -r requirements.txt
 
-# Run backend
-uvicorn main:app --reload --port 8000
+# Backend (dev)
+cd backend && uvicorn main:app --reload --port 8000
 
-# Run frontend
+# Frontend (dev)
 cd frontend && npm install && npm run dev
 
-# Test YOLO on single frame
-python scripts/test_yolo.py --video path/to/platform.avi
+# Single-frame detection preview
+cd backend && bash preview.sh data/Camera/Platform/somefile.avi
 
-# Run correlation analysis
-python scripts/correlate_weight_camera.py
+# Full video IN/OUT tracking (first 30 seconds)
+cd backend && python3 scripts/analyze_video.py data/Camera/Platform/somefile.avi --seconds 30
+
+# Zone samples from a video → JSON (for precomputed mode)
+cd backend && python3 scripts/zone_detector.py data/Camera/Platform/somefile.avi
+# → outputs zone_counts.json
+
+# Key stat from weight data
+cd backend && python3 scripts/correlate.py
+
+# Production build
+cd frontend && npm run build
+cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
 ---
 
-## Definition of Done
-- [ ] YOLO detects persons in AVI footage and outputs zone counts
-- [ ] Weight-camera correlation produces validated zone→car mapping
-- [ ] FastAPI serves zone density and nudge recommendation
-- [ ] React dashboard shows live platform zones + nudge status
-- [ ] Key imbalance stat derived and validated
-- [ ] Presentation narrative built around the stat
-- [ ] Full dry run completed before presentation
+## Deployment
+
+- **Backend:** Render web service — see `render.yaml` at repo root
+- **Frontend:** Vercel — root directory `frontend`, env var `VITE_API_URL=<render-url>`
+- Both services use the same GitHub repo

@@ -3,11 +3,9 @@
 ## Available Datasets
 
 ### 1. total_data_15min.csv
-**What:** 15-minute passenger count bins per station  
-**Coverage:** 27 stations, Jan 1 2025 – Mar 31 2026 (15 months)  
-**Rows:** ~909,000  
 **Columns:** `station`, `time_bin`, `passenger_count`  
-**Use for:** Time-of-day and day-of-week pattern analysis, peak hour identification, predictive layer
+**Coverage:** 27 stations, Jan 2025 – Mar 2026, 15-min bins, ~909K rows  
+**Use for:** Historical baseline, load prediction, time-of-day patterns
 
 ```python
 import pandas as pd
@@ -15,111 +13,113 @@ df = pd.read_csv('total_data_15min.csv')
 df['time_bin'] = pd.to_datetime(df['time_bin'])
 df['hour'] = df['time_bin'].dt.hour
 df['dayofweek'] = df['time_bin'].dt.dayofweek
+# Peak hours per station
+peak = df.groupby(['station','hour'])['passenger_count'].mean()
+print(peak['Nizami'].sort_values(ascending=False).head(5))
 ```
 
 ---
 
 ### 2. Clean_passenger_data_01012025-31032026.csv
-**What:** Gate-level daily passenger counts  
-**Coverage:** 27 stations, 38 gates, Jan 2025 – Mar 2026  
-**Rows:** ~157,000  
 **Columns:** `date`, `station`, `gate`, `sernishin_sayi`  
-**Use for:** Which gates are busiest, entry point bottleneck analysis
+**Coverage:** 27 stations, 38 gates, daily  
+**Use for:** Gate-level inflow proxy if entrance cam fails
 
 ---
 
 ### 3. NFC_16_02_2026.csv
-**What:** Individual NFC card transactions, Feb 16 2026  
-**Rows:** ~290,000  
-**Columns:** `Pan Hash`, `Used Time`, `Processing Finish Timestamp`, `Used Amount`, `Payment Type`, `Payment Token Type`, `Route Code`, `Station Name`, `Station Entry`, `Organization Name`  
-**Use for:** Ground truth of passenger entry times at specific gates on a real day
+**Columns:** `Pan Hash`, `Used Time`, `Station Name`, `Station Entry`, ...  
+**~290K rows, Feb 16 2026**  
+**Use for:** Inflow event timestamps (seed FlowEngine)
+
+```python
+df = pd.read_csv('NFC_16_02_2026.csv')
+df['Used Time'] = pd.to_datetime(df['Used Time'])
+nizami_inflow = df[df['Station Name'] == 'Nizami'].sort_values('Used Time')
+```
 
 ---
 
 ### 4. QR_16_02_2026.csv
-**What:** QR payment transactions, Feb 16 2026  
-**Rows:** ~90,000  
-**Columns:** `Payment Type`, `Used Time`, `Server Timestamp`, `Used Amount`, `Route Name`, `Operator Name`, `Station`, `Gate Info`
+**Columns:** `Payment Type`, `Used Time`, `Station`, `Gate Info`  
+**~90K rows**
 
 ---
 
 ### 5. SC_16_02_2026.csv
-**What:** Smart Card transactions, Feb 16 2026  
-**Rows:** ~425,000  
-**Columns:** `Payment Type`, `Operation Timestamp`, `Server Timestamp`, `Cumulative Fare Or Product Price`, `Activity Type`, `Validation Status`, `Route Name`, `Station`, `Operator Name`, `Gate Info`
+**Columns:** `Payment Type`, `Operation Timestamp`, `Station`, `Gate Info`, `Activity Type`  
+**~425K rows**
 
 ---
 
-### 6. Passenger_density_16_02_2026.xlsx
-**What:** Passenger density data for Feb 16 2026  
-**Use for:** Validation against transaction data
+### 6. Weight Sensor Data
+**What:** Per-car, per-train-visit occupancy, timestamped  
+**Critical for:** KEY STAT derivation, zone→car mapping validation  
+**Adjust column names in correlate.py to match actual file**
 
 ---
 
-### 7. Weight Sensor Data (separate folder)
-**What:** Per-car, per-train-visit passenger counts derived from weight, timestamped  
-**Critical for:** Zone→car mapping correlation  
-**Format:** Per-car occupancy % or passenger count, with train arrival timestamp and station
-
----
-
-### 8. Camera Footage (separate folder — not uploaded)
-**What:** AVI format, overhead slightly angled, platform coverage  
+### 7. Camera Footage (AVI)
 **Folders:** Entrance, Escalator, Platform, Train, Turnstile  
-**Use for:** YOLO person detection, zone segmentation
+**Format:** AVI, overhead slightly angled  
+**Use for:** YOLO person detection per zone
 
 ---
 
-## Key Data Relationships
-
-```
-Camera timestamp ──────────────────────┐
-                                       ▼
-Weight timestamp ──────────► CORRELATE → zone_X → car_Y mapping
-
-Station entry time (NFC/QR/SC) ──────► how many entered before this train
-total_data_15min ────────────────────► expected load at this time of day
-```
+## All 27 Stations
+20 Yanvar, 28-May, 8 Noyabr, Akhmedli, Avtovaghzal, Azadlig Prospekti, Bakmil, Darnagul, Elmlar Akademiyasi, Ganjlik, Hazi Aslanov, İçərişəhər, Jafar Jabbarly, Koroghlu, Memar Ajami, Nariman Narimanov, Neftchilar, Nizami, Sahil, Ulduz, Khalglar Dostlughu + 6 others
 
 ---
 
-## Zone→Car Mapping (to be derived by Person 4)
+## Key Stat Query (run on weight data)
 
-The platform frame should be divided into N horizontal zones where N = number of cars per train.
-
-**Steps:**
-1. Load a sample AVI frame
-2. Identify platform boundaries in frame
-3. Divide width into equal zones (or use visual markers if visible)
-4. For each train visit: count persons per zone at T-minus-2min (before train arrives)
-5. Match with weight data at same timestamp: which car had what load
-6. Derive: zone_1 → car_1 correlation coefficient, etc.
-
-**Expected finding:** Zone 1 (near main entrance) → Car 1-2 consistently overloaded
-
----
-
-## Stations Available in Data
-20 Yanvar, 28-May, 8 Noyabr, Akhmedli, Avtovaghzal, Azadlig Prospekti, Bakmil, Darnagul, Elmlar Akademiyasi, Ganjlik, Hazi Aslanov, İçərişəhər, Jafar Jabbarly, Koroghlu, Memar Ajami, Nariman Narimanov, Neftchilar, Nizami, Sahil, Ulduz, Khalglar Dostlughu, and others (27 total)
-
----
-
-## Quick Analysis Snippets
-
-### Peak hours by station
 ```python
-df = pd.read_csv('total_data_15min.csv')
-df['time_bin'] = pd.to_datetime(df['time_bin'])
-df['hour'] = df['time_bin'].dt.hour
-peak = df.groupby(['station', 'hour'])['passenger_count'].mean().reset_index()
-print(peak[peak['station'] == 'Nizami'].sort_values('passenger_count', ascending=False).head(5))
+import pandas as pd
+
+df = pd.read_csv('data/weight_data.csv')  # adjust path and column names
+
+# Adjust these column names to match actual file:
+# train_visit_id — unique ID per train arrival
+# car_number     — which car (1-5)
+# occupancy_pct  — load percentage
+
+stats = df.groupby('train_visit_id').agg(
+    max_load=('occupancy_pct', 'max'),
+    min_load=('occupancy_pct', 'min'),
+).assign(imbalance=lambda x: x['max_load'] - x['min_load'])
+
+print(f"Train visits analyzed:   {len(stats)}")
+print(f"Avg imbalance:           {stats['imbalance'].mean():.1f}%")
+print(f"Most crowded car avg:    {stats['max_load'].mean():.1f}%")
+print(f"Least crowded car avg:   {stats['min_load'].mean():.1f}%")
+print(f"Ratio:                   {stats['max_load'].mean() / stats['min_load'].mean():.2f}x")
 ```
 
-### Imbalance stat from weight data
+---
+
+## Inflow Proxy (if entrance cam unavailable)
+
 ```python
-# After loading weight data
-imbalance = weight_df.groupby('train_visit_id').apply(
-    lambda x: x['occupancy_pct'].max() - x['occupancy_pct'].min()
-).mean()
-print(f"Average car imbalance per train: {imbalance:.1f}%")
+# Use transaction timestamps as inflow events
+import pandas as pd
+
+nfc = pd.read_csv('NFC_16_02_2026.csv')
+qr  = pd.read_csv('QR_16_02_2026.csv')
+sc  = pd.read_csv('SC_16_02_2026.csv')
+
+nfc = nfc.rename(columns={'Used Time': 'timestamp', 'Station Name': 'station'})
+qr  = qr.rename(columns={'Used Time': 'timestamp', 'Station': 'station'})
+sc  = sc.rename(columns={'Operation Timestamp': 'timestamp', 'Station': 'station'})
+
+all_entries = pd.concat([
+    nfc[['timestamp','station']],
+    qr[['timestamp','station']],
+    sc[['timestamp','station']]
+])
+all_entries['timestamp'] = pd.to_datetime(all_entries['timestamp'])
+
+# Inflow per 15-min bin per station
+all_entries['bin'] = all_entries['timestamp'].dt.floor('15min')
+inflow = all_entries.groupby(['station','bin']).size().reset_index(name='entries')
+print(inflow[inflow['station'] == 'Nizami'].sort_values('entries', ascending=False).head(10))
 ```

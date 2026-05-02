@@ -2,12 +2,14 @@ import os
 import io
 import re
 import json
+import math
 import time
 import uuid
 import random
 import threading
 from pathlib import Path
 from collections import defaultdict
+from datetime import datetime
 
 import cv2
 from fastapi import FastAPI, HTTPException
@@ -17,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from scripts.nudge_engine import decide_nudge
+from scripts.predictor import get_baseline, get_station_peak, predict_load
 
 try:
     from ultralytics import YOLO
@@ -65,6 +68,72 @@ _key_stat_default = {
     "ratio": 2.5,
     "train_visits_analyzed": 284,
 }
+
+# ---------------------------------------------------------------------------
+# Station registry  (id → display name + CSV name)
+# ---------------------------------------------------------------------------
+STATIONS_REGISTRY: dict[str, dict] = {
+    "20-yanvar":          {"name": "20 Yanvar",           "csv": "20 Yanvar"},
+    "28-may":             {"name": "28 May",              "csv": "28-May"},
+    "8-noyabr":           {"name": "8 Noyabr",            "csv": "8 Noyabr"},
+    "akhmedli":           {"name": "Əhmədli",              "csv": "Akhmedli"},
+    "avtovaghzal":        {"name": "Avtovağzal",           "csv": "Avtovaghzal"},
+    "azadlig-prospekti":  {"name": "Azadlıq Prospekti",   "csv": "Azadlig Prospekti"},
+    "bakmil":             {"name": "Bakmil",               "csv": "Bakmil"},
+    "darnagul":           {"name": "Dərnəgül",             "csv": "Darnagul"},
+    "elmlar-akademiyasi": {"name": "Elmlar Akademiyası",   "csv": "Elmlar Akademiyasi"},
+    "ganjlik":            {"name": "Gənclik",              "csv": "Ganjlik"},
+    "gara-garayev":       {"name": "Qara Qarayev",         "csv": "Gara Garayev"},
+    "hazi-aslanov":       {"name": "Həzi Aslanov",         "csv": "Hazi Aslanov"},
+    "icherisheher":       {"name": "İçərişəhər",           "csv": "Icherisheher"},
+    "inshaatchilar":      {"name": "İnşaatçılar",          "csv": "Inshaatchilar"},
+    "jafar-jabbarli":     {"name": "Cəfər Cabbarlı",       "csv": "Jafar Jabbarli"},
+    "khalglar-dostlughu": {"name": "Xalqlar Dostluğu",    "csv": "Khalglar Dostlughu"},
+    "khatai":             {"name": "Xətai",                "csv": "Khatai"},
+    "khocasen":           {"name": "Xocəsən",              "csv": "Khocasen"},
+    "koroghlu":           {"name": "Koroğlu",              "csv": "Koroghlu"},
+    "memar-ajami":        {"name": "Memar Əcəmi",          "csv": "Memar Ajami"},
+    "memar-ajami-2":      {"name": "Memar Əcəmi 2",        "csv": "Memar Ajami 2"},
+    "nariman-narimanov":  {"name": "Nəriman Nərimanov",    "csv": "Nariman Narimanov"},
+    "nasimi":             {"name": "Nəsimi",               "csv": "Nasimi"},
+    "neftchilar":         {"name": "Neftçilər",            "csv": "Neftchilar"},
+    "nizami":             {"name": "Nizami",               "csv": "Nizami"},
+    "sahil":              {"name": "Sahil",                "csv": "Sahil"},
+    "ulduz":              {"name": "Ulduz",                "csv": "Ulduz"},
+}
+
+_STATION_IDS = list(STATIONS_REGISTRY.keys())
+
+
+def _next_train_min(station_id: str) -> int:
+    """Simulated schedule: stations staggered across an 8-minute cycle."""
+    cycle = 8
+    offset = abs(hash(station_id)) % cycle
+    elapsed = (int(time.time()) // 60) % cycle
+    remaining = (offset - elapsed) % cycle
+    return remaining if remaining > 0 else cycle
+
+
+def _estimate_zones(inside_count: int, station_idx: int, n: int = 5) -> dict:
+    """Generate a slowly-varying zone distribution based on load and station position."""
+    t = int(time.time()) // 30
+    weights = [
+        1.4 + 0.2 * math.sin(t + station_idx),
+        1.0 + 0.1 * math.cos(t * 0.7),
+        0.7,
+        1.0 + 0.1 * math.sin(t * 0.5 + 1),
+        1.3 + 0.2 * math.cos(t + station_idx + 2),
+    ]
+    total_w = sum(weights)
+    zones: dict[int, int] = {}
+    remaining = inside_count
+    for i in range(n - 1):
+        share = max(0, round(inside_count * weights[i] / total_w))
+        zones[i] = min(share, remaining)
+        remaining -= zones[i]
+    zones[n - 1] = max(0, remaining)
+    return zones
+
 
 def load_key_stat() -> dict:
     if KEY_STAT_PATH.exists():
@@ -302,6 +371,81 @@ def get_stats():
 def get_status():
     return {"mode": state['mode'], "yolo_available": YOLO_AVAILABLE,
             "frame_count": state['frame_count'], "fps": state['fps']}
+
+
+@app.get("/api/stations")
+def get_stations():
+    """All 27 stations with current load derived from historical baseline."""
+    now = datetime.now()
+    result = []
+    for idx, (sid, meta) in enumerate(STATIONS_REGISTRY.items()):
+        baseline = get_baseline(meta["csv"], now.hour, now.minute, now.weekday())
+        peak     = get_station_peak(meta["csv"])
+        load_pct = round(min((baseline / peak) * 100, 100), 1) if peak else 0.0
+        load_level = (
+            "critical" if load_pct >= 80 else
+            "high"     if load_pct >= 60 else
+            "medium"   if load_pct >= 35 else
+            "low"
+        )
+        inside_count = max(0, round(baseline / 3))
+        result.append({
+            "id":            sid,
+            "name":          meta["name"],
+            "load_pct":      load_pct,
+            "load_level":    load_level,
+            "inside_count":  inside_count,
+            "next_train_min": _next_train_min(sid),
+        })
+    return result
+
+
+@app.get("/api/station/{station_id}")
+def get_station(station_id: str):
+    """Full station detail: flow metrics, zone estimates, prediction, guidance."""
+    meta = STATIONS_REGISTRY.get(station_id)
+    if not meta:
+        raise HTTPException(404, f"Unknown station: {station_id}")
+
+    now        = datetime.now()
+    station_idx = _STATION_IDS.index(station_id)
+    baseline   = get_baseline(meta["csv"], now.hour, now.minute, now.weekday())
+    peak       = get_station_peak(meta["csv"])
+    load_pct   = round(min((baseline / peak) * 100, 100), 1) if peak else 0.0
+    inside_count = max(0, round(baseline / 3))
+
+    inflow_per_min  = round(baseline / 15, 1)
+    outflow_per_min = round(inflow_per_min * 0.75, 1)
+    next_train      = _next_train_min(station_id)
+    predicted_inside = predict_load(inside_count, inflow_per_min, outflow_per_min, next_train)
+    predicted_pct    = round(min((predicted_inside / max(inside_count, 1)) * load_pct, 100), 1)
+
+    zones    = _estimate_zones(inside_count, station_idx)
+    guidance = decide_nudge(zones)
+
+    return {
+        "id":                   station_id,
+        "name":                 meta["name"],
+        "inflow_per_min":       inflow_per_min,
+        "outflow_per_min":      outflow_per_min,
+        "inside_count":         inside_count,
+        "load_pct":             load_pct,
+        "load_level":           (
+            "critical" if load_pct >= 80 else
+            "high"     if load_pct >= 60 else
+            "medium"   if load_pct >= 35 else
+            "low"
+        ),
+        "predicted_load_pct":   predicted_pct,
+        "predicted_inside":     predicted_inside,
+        "next_train_min":       next_train,
+        "historical_baseline":  round(baseline),
+        "zones":                zones,
+        "guidance_zones":       [guidance.get("target_zone")] if guidance.get("active") else [],
+        "guidance_text":        guidance.get("reason", "Distribution balanced"),
+        "guidance_active":      guidance.get("active", False),
+    }
+
 
 # ---------------------------------------------------------------------------
 # New ML endpoints

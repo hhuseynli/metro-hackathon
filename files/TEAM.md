@@ -1,71 +1,144 @@
 # Team Roles
 
 ## Person 1 — Frontend / UI/UX
-**Owns:** React dashboard, platform visualization, nudge UI  
+**Owns:** React dashboard  
 **Deliverables:**
-- Platform zone heatmap component
-- Real-time density display (polling /api/zones every 2s)
-- Nudge status indicator (which zone, what type)
-- Historical stats panel
-- Overall visual polish for demo
+- MetroMap: SVG metro map with 3 lines, 27 clickable stations — **done**
+- PlatformDiagram: live 5-zone heatmap — **done**
+- WagonOccupancy: per-wagon occupancy bars — **done**
+- AnalysisPanel: camera selector, preview frame, ByteTrack IN/OUT UI — **done**
+- Station detail view: connect `/api/station/{id}` to a slide-in panel or screen
 
-**Do NOT ask Person 1 to:**
-- Touch Python or YOLO
-- Do data analysis
+**Do NOT ask Person 1 to touch Python, YOLO, or data analysis.**
+
+**Data contract — actual API responses:**
+
+```json
+// GET /api/stations
+[
+  {
+    "id": "nizami",
+    "name": "Nizami",
+    "load_pct": 72.0,
+    "load_level": "high",
+    "inside_count": 312,
+    "next_train_min": 3
+  }
+]
+
+// GET /api/station/{id}
+{
+  "id": "nizami",
+  "name": "Nizami",
+  "inflow_per_min": 17.0,
+  "outflow_per_min": 12.8,
+  "inside_count": 85,
+  "load_pct": 72.0,
+  "load_level": "high",
+  "predicted_load_pct": 78.5,
+  "predicted_inside": 104,
+  "next_train_min": 3,
+  "historical_baseline": 255,
+  "zones": { "0": 22, "1": 17, "2": 11, "3": 17, "4": 18 },
+  "guidance_zones": [2],
+  "guidance_text": "Zone 0 (22p) vs Zone 2 (11p)",
+  "guidance_active": true
+}
+
+// GET /api/zones  (live platform camera — used by PlatformDiagram)
+{
+  "zones": { "0": 18, "1": 15, "2": 9, "3": 4, "4": 3 },
+  "frame_count": 142,
+  "mode": "demo",
+  "fps": 2.0
+}
+
+// GET /api/nudge
+{
+  "active": true,
+  "target_zone": 3,
+  "target_car": 4,
+  "overcrowded_zone": 0,
+  "overcrowded_car": 1,
+  "nudge_type": "lighting+sound",
+  "intensity": "subtle",
+  "ratio": 6.0,
+  "reason": "Zone 0 (18p) vs Zone 3 (4p)",
+  "messages": {
+    "az": "Arxaya doğru irəliləyin — boş vaqonlar sizi gözləyir",
+    "en": "Move toward the rear — less crowded cars ahead",
+    "ru": "Пройдите в хвост поезда — там свободнее"
+  }
+}
+
+// GET /api/stats
+{
+  "avg_imbalance_pct": 43.2,
+  "most_crowded_car_avg": 78.4,
+  "least_crowded_car_avg": 31.1,
+  "ratio": 2.5,
+  "train_visits_analyzed": 284
+}
+
+// GET /api/wagon-occupancy
+{
+  "В2": { "persons": 12, "percentage": 3.8, "capacity": 315, "cameras_sampled": 5 },
+  "В3": { "persons": 4,  "percentage": 1.3, "capacity": 315, "cameras_sampled": 1 },
+  "В4": { "persons": 18, "percentage": 5.7, "capacity": 315, "cameras_sampled": 6 }
+}
+
+// GET /api/cameras
+{
+  "Escalator": ["28MAY11 ESKALATOR UST-16.04.2026 SAAT 18.00.avi", ...],
+  "Platform":  ["28MAY28 2-CI YOL BAS-16.04.2026 SAAT 18.00.avi", ...],
+  "Train":     ["В2CAM1-16.04.2026.avi", ...]
+}
+```
 
 ---
 
 ## Person 2 — Presentation
-**Owns:** Entire presentation narrative, slides, rehearsal  
-**Deliverables:**
-- Slide deck (problem → data → system → demo → impact)
-- The key imbalance stat slide (get number from Person 4)
-- Behavioral science slide (why nudging works — cite 1-2 papers)
-- Demo script (what to say while showing the dashboard)
-- Rehearsal facilitation (run dry run at hour 11)
+**Owns:** Slide deck, narrative, rehearsal  
+**Start now — not after the prototype is done.**
 
-**Start now — not day 3.**
-
-**Key narrative arc:**
-1. Every Baku commuter knows this problem (relatable hook)
-2. We measured it: [KEY STAT] (credibility)
-3. Signs don't work — people don't follow them (insight)
-4. Light and sound do — here's the science (innovation)
-5. Here's our system detecting and nudging in real time (demo)
-6. Result: X% more even distribution (impact)
+**Slide structure:** See PRESENTATION.md  
+**Most important task:** Get the KEY STAT from Person 4 by hour 6 and build the data slide around it.
 
 ---
 
 ## Person 3 — Project Manager / Generalist
-**Owns:** Coordination, unblocking, data cleaning, behavioral science research  
+**Owns:** Coordination, data cleaning, unblocking  
 **Deliverables:**
-- Clean weight data formatted for Person 4's correlation script
-- Behavioral science literature summary for Person 2 (2-3 sources)
-- Timeline tracking — flag if any task is falling behind
-- Bridge between Person 4's output and Person 1's input (data format translation)
+- Clean and format weight data for Person 4
+- Bridge Person 4's output format to Person 1's expected format
+- Find 2-3 behavioral science / transport nudging sources for Person 2
+- Flag timeline slippage immediately
+- Run integration test at hour 10
 
-**Behavioral science sources to find:**
-- Crowd flow and ambient lighting studies (retail/transit)
-- Soundscape effect on pedestrian movement
-- Nudge theory in public transport (Thaler & Sunstein is the foundation)
+**If Person 4 is blocked for 30+ minutes → drop everything and help.**
 
 ---
 
 ## Person 4 — Backend / Data
-**Owns:** Entire technical core — YOLO pipeline, correlation analysis, FastAPI  
+**Owns:** Everything technical — YOLO, correlation, FastAPI  
 **Deliverables:**
-- YOLO setup and test inference on AVI footage
-- Zone segmentation logic (divide frame into car-position zones)
-- Weight-camera timestamp correlation → zone→car mapping
-- KEY STAT: imbalance numbers across N train visits
-- Nudge decision engine
-- FastAPI with /api/zones, /api/nudge, /api/stats endpoints
+- [x] YOLO setup + test inference on AVI footage
+- [x] Zone segmentation on platform camera (`zone_detector.py`)
+- [x] ByteTrack IN/OUT tracking (`analyze_video.py`)
+- [x] Wagon occupancy from train cameras (`/api/wagon-occupancy`)
+- [x] Historical baseline + load prediction (`predictor.py`)
+- [x] Sliding-window flow engine (`flow_engine.py`)
+- [x] All 27 stations endpoint (`/api/stations`, `/api/station/{id}`)
+- [x] Nudge engine (`nudge_engine.py`)
+- [x] FastAPI with all endpoints
+- [ ] Weight-camera correlation → KEY STAT (`correlate.py` — needs actual weight file)
 
-**Person 4's time is the most critical resource. Do not interrupt with non-blocking tasks.**
+**Person 4's time is the scarcest resource. Protect it.**
 
 ---
 
-## Escalation Protocol
-If Person 4 is blocked for more than 30 minutes on anything → Person 3 drops everything to help.  
-If frontend and backend integration is breaking → Person 3 mediates.  
-If presentation is missing key stats by hour 8 → Person 3 extracts them manually from CSV files.
+## Escalation
+- Person 4 blocked 30+ min → Person 3 helps immediately
+- Frontend-backend integration breaking → Person 3 mediates
+- Key stat not ready by hour 6 → Person 3 extracts manually from CSVs
+- Anything breaking at hour 11 → fallback plan (see CLAUDE.md)

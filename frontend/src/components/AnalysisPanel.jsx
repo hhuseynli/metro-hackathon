@@ -67,7 +67,7 @@ export default function AnalysisPanel() {
         <button
           onClick={preview}
           disabled={!filename || loading}
-          className="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white disabled:opacity-40 hover:bg-slate-700 transition-colors"
+          className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
         >
           Preview Frame
         </button>
@@ -102,7 +102,7 @@ export default function AnalysisPanel() {
         <button
           onClick={startTracking}
           disabled={!filename || loading}
-          className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white disabled:opacity-40 hover:bg-blue-500 transition-colors"
+          className="px-4 py-2 rounded-lg text-sm font-semibold bg-sky-600 text-white disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed hover:bg-sky-500 transition-colors"
         >
           {loading && job?.status === 'running' ? 'Tracking…' : 'Track IN / OUT'}
         </button>

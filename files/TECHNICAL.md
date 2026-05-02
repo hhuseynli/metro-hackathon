@@ -1,290 +1,251 @@
-# Technical Implementation Guide
+# Technical Implementation
 
-## For Person 4 — Backend / Data
+## Actual file layout
 
----
+```
+backend/
+  main.py                     ← FastAPI server, all endpoints
+  requirements.txt
+  key_stat.json               ← imbalance metrics (overrides hardcoded defaults)
+  preview.sh                  ← bash helper for local preview/analysis runs
+  outputs/                    ← generated MP4s and JPEGs
+  scripts/
+    yolo_utils.py             ← shared constants (CONF, IOU, IMGSZ) + blur_faces()
+    zone_detector.py          ← YOLO zone counts from a frame or video
+    nudge_engine.py           ← decide_nudge(): which zone to guide passengers to
+    flow_engine.py            ← FlowEngine sliding-window inflow/outflow tracker
+    predictor.py              ← historical baseline + load prediction
+    analyze_video.py          ← ByteTrack IN/OUT counter, writes annotated MP4
+    preview_detection.py      ← single-frame YOLO detection, saves annotated JPEG
+    correlate.py              ← derives key stat from weight sensor data
 
-## 1. YOLO Zone Detection Pipeline
-
-```python
-# scripts/zone_detector.py
-import cv2
-from ultralytics import YOLO
-import numpy as np
-import json
-
-model = YOLO('yolov8n.pt')  # nano = fastest
-
-def get_zone_counts(frame, n_zones=5):
-    """
-    Divide frame into n_zones horizontal zones (left to right = car 1 to car N)
-    Return person count per zone.
-    """
-    h, w = frame.shape[:2]
-    zone_width = w // n_zones
-    
-    results = model(frame, classes=[0], verbose=False)  # class 0 = person
-    
-    zone_counts = {i: 0 for i in range(n_zones)}
-    
-    for box in results[0].boxes:
-        x_center = float((box.xyxy[0][0] + box.xyxy[0][2]) / 2)
-        zone = min(int(x_center // zone_width), n_zones - 1)
-        zone_counts[zone] += 1
-    
-    return zone_counts
-
-def process_video(video_path, sample_every_n_frames=30):
-    """Process AVI, sample every N frames, return zone counts over time."""
-    cap = cv2.VideoCapture(video_path)
-    results = []
-    frame_idx = 0
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        if frame_idx % sample_every_n_frames == 0:
-            timestamp_sec = frame_idx / fps
-            counts = get_zone_counts(frame)
-            results.append({'timestamp_sec': timestamp_sec, 'zones': counts})
-        frame_idx += 1
-    
-    cap.release()
-    return results
-
-if __name__ == '__main__':
-    import sys
-    video_path = sys.argv[1]
-    results = process_video(video_path)
-    with open('zone_counts.json', 'w') as f:
-        json.dump(results, f)
-    print(f"Processed {len(results)} samples")
-    print("Sample:", results[0] if results else "empty")
+frontend/src/
+  App.jsx                     ← tab nav (Xəritə/Platform/Statistika/Analiz), 100dvh layout
+  components/
+    MetroMap.jsx              ← SVG metro map; fullscreen prop fills viewport, card mode for embed
+    PlatformDiagram.jsx       ← live 5-zone heatmap (polls /api/zones)
+    WagonOccupancy.jsx        ← wagon occupancy bars (calls /api/wagon-occupancy)
+    AnalysisPanel.jsx         ← camera explorer + preview + ByteTrack UI
+    StationDetail.jsx         ← slide-up overlay; zone bars, load %, prediction, guidance
+    StatusBar.jsx             ← compact dot variant for header; full bar for tab content
+    NudgePanel.jsx            ← nudge engine output (dark card)
+    StatsPanel.jsx            ← historical imbalance key stat (dark card)
+  hooks/
+    useMetroData.js           ← polls /api/zones, /api/nudge, /api/stats; exports useStation(id)
+    useAnalysis.js            ← useCameras(), useAnalysis() for AnalysisPanel
 ```
 
 ---
 
-## 2. Weight-Camera Correlation
+## 1. Shared YOLO constants — `scripts/yolo_utils.py`
 
 ```python
-# scripts/correlate.py
-import pandas as pd
+import cv2
 import numpy as np
 
-def load_weight_data(path):
-    """
-    Expected columns: train_visit_id, timestamp, car_number, occupancy_pct (or passenger_count)
-    Adjust based on actual weight data format.
-    """
-    df = pd.read_csv(path)  # or read_excel
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    return df
+CONF = 0.10   # low threshold — catches people in background
+IOU  = 0.7
+IMGSZ = 1280  # large input — better for wide platform shots
+HEAD_FRACTION = 0.28
 
-def correlate_zones_to_cars(zone_counts_json, weight_df, tolerance_seconds=60):
-    """
-    For each train visit in weight_df:
-    1. Find camera zone counts at matching timestamp
-    2. Record: which zones were dense + which cars were heavy
-    3. Build zone→car correlation matrix
-    """
-    import json
-    with open(zone_counts_json) as f:
-        zone_data = json.load(f)
-    
-    # This is the core analysis — adjust column names to match actual weight data
-    correlations = []
-    
-    for visit_id, group in weight_df.groupby('train_visit_id'):
-        visit_time = group['timestamp'].iloc[0]
-        
-        # Find closest camera sample
-        # (requires camera footage to have real timestamps, not just frame offsets)
-        # If camera footage is from a specific date, offset accordingly
-        
-        car_loads = group.set_index('car_number')['occupancy_pct'].to_dict()
-        correlations.append({
-            'visit_id': visit_id,
-            'timestamp': visit_time,
-            'car_loads': car_loads
-        })
-    
-    return correlations
-
-def compute_key_stat(weight_df):
-    """
-    Compute the headline imbalance statistic.
-    Returns: average max-min spread across all train visits.
-    """
-    stats = weight_df.groupby('train_visit_id').agg(
-        max_load=('occupancy_pct', 'max'),
-        min_load=('occupancy_pct', 'min'),
-        mean_load=('occupancy_pct', 'mean')
-    )
-    stats['imbalance'] = stats['max_load'] - stats['min_load']
-    
-    print(f"=== KEY STAT ===")
-    print(f"Average car load imbalance per train: {stats['imbalance'].mean():.1f}%")
-    print(f"Most crowded car avg: {stats['max_load'].mean():.1f}%")
-    print(f"Least crowded car avg: {stats['min_load'].mean():.1f}%")
-    print(f"Ratio: {stats['max_load'].mean() / stats['min_load'].mean():.1f}x")
-    print(f"Based on {len(stats)} train visits")
-    
-    return stats
-
-if __name__ == '__main__':
-    # Adjust path to actual weight data file
-    weight_df = load_weight_data('data/weight_data.csv')
-    stats = compute_key_stat(weight_df)
+def blur_faces(frame, boxes):
+    out = frame.copy()
+    for box in boxes:
+        x1, y1, x2, y2 = [int(v) for v in box.xyxy[0]]
+        head_h = int((y2 - y1) * HEAD_FRACTION)
+        fy1, fy2 = max(0, y1), min(frame.shape[0], y1 + head_h)
+        fx1, fx2 = max(0, x1), min(frame.shape[1], x2)
+        if fy2 > fy1 and fx2 > fx1:
+            out[fy1:fy2, fx1:fx2] = cv2.GaussianBlur(out[fy1:fy2, fx1:fx2], (51, 51), 20)
+    return out
 ```
 
 ---
 
-## 3. Nudge Decision Engine
+## 2. YOLO Zone Detection — `scripts/zone_detector.py`
+
+Divides a frame horizontally into N zones and counts detected persons per zone.
+Model is lazy-loaded once and reused.
 
 ```python
-# scripts/nudge_engine.py
+from scripts.yolo_utils import CONF, IOU, IMGSZ
 
-ZONE_TO_CAR = {0: 1, 1: 2, 2: 3, 3: 4, 4: 5}  # update after correlation
+def get_zone_counts(frame, n_zones=5, model=None) -> dict[int, int]:
+    """Returns {zone_index: person_count} for each horizontal zone."""
+    ...
 
-def decide_nudge(zone_counts: dict, threshold_ratio: float = 1.5):
-    """
-    If any zone is threshold_ratio times denser than another,
-    recommend nudging passengers toward the least dense zone.
-    """
-    if not zone_counts:
-        return None
-    
-    total = sum(zone_counts.values())
-    if total == 0:
-        return None
-    
-    max_zone = max(zone_counts, key=zone_counts.get)
-    min_zone = min(zone_counts, key=zone_counts.get)
-    
-    max_count = zone_counts[max_zone]
-    min_count = zone_counts[min_zone]
-    
-    if min_count == 0 or (max_count / max(min_count, 1)) >= threshold_ratio:
-        return {
-            'active': True,
-            'target_zone': min_zone,
-            'target_car': ZONE_TO_CAR.get(min_zone, min_zone + 1),
-            'nudge_type': 'lighting+sound',
-            'intensity': 'subtle',
-            'reason': f'Zone {max_zone} is {max_count} vs zone {min_zone} at {min_count}'
-        }
-    
-    return {'active': False, 'reason': 'Distribution is balanced'}
+def process_video(video_path: str, sample_every_n_frames: int = 30) -> list:
+    """Sample every N frames → list of {timestamp_sec, zones}. Saves to zone_counts.json."""
+    ...
+```
+
+Run standalone to pre-compute zone JSON for `ZONE_JSON` precomputed mode:
+```bash
+python3 scripts/zone_detector.py data/Camera/Platform/somefile.avi
+# → zone_counts.json
 ```
 
 ---
 
-## 4. FastAPI Server
+## 3. Nudge Engine — `scripts/nudge_engine.py`
+
+Replaces the earlier `guidance.py` concept. Returns a richer nudge dict including
+multilingual messages and intensity level.
 
 ```python
-# main.py
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import cv2
-import threading
-import time
-from ultralytics import YOLO
-from scripts.zone_detector import get_zone_counts
-from scripts.nudge_engine import decide_nudge
+def decide_nudge(zone_counts: dict, threshold_ratio: float = 1.5) -> dict:
+    # Returns:
+    # { active, target_zone, target_car, overcrowded_zone, overcrowded_car,
+    #   nudge_type, intensity, ratio, reason, messages: {az, en, ru} }
+```
 
-app = FastAPI()
+---
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+## 4. Flow Engine — `scripts/flow_engine.py`
+
+Sliding-window inflow/outflow tracker. Feed it entry/exit events from camera counts
+or transaction CSV; get rates and a running inside count.
+
+```python
+from scripts.flow_engine import FlowEngine, seed_from_transactions
+
+engine = FlowEngine(window_seconds=60)
+engine.record_inflow(3)          # 3 people entered
+engine.record_outflow(1)         # 1 person left
+metrics = engine.get_metrics()
+# → {"inflow_per_min": 3.0, "outflow_per_min": 1.0, "inside_count": 2}
+
+# Seed from NFC/QR/SC CSV:
+seed_from_transactions(engine, "data/Data/NFC 16.02.2026.csv", "Nizami")
+```
+
+---
+
+## 5. Predictor — `scripts/predictor.py`
+
+Loads `total_data_15min.csv` once (lazy, cached) and provides:
+- Historical baseline for any station/time-of-week
+- Station's all-time peak count
+- Linear load prediction at next train arrival
+
+```python
+from scripts.predictor import get_baseline, get_station_peak, predict_load
+
+baseline = get_baseline("Nizami", hour=8, minute=30, dayofweek=0)   # Monday 08:30
+peak     = get_station_peak("Nizami")
+load_pct = (baseline / peak) * 100
+
+predicted_inside = predict_load(
+    current_inside=120,
+    inflow_per_min=8.5,
+    outflow_per_min=3.2,
+    minutes_until_train=4,
 )
+```
 
-# Shared state
-state = {
-    'zone_counts': {0: 0, 1: 0, 2: 0, 3: 0, 4: 0},
-    'nudge': {'active': False},
-    'frame_count': 0
-}
+**Station names** must match the CSV exactly (see `STATIONS_REGISTRY` in main.py for the
+full id → csv_name mapping).
 
-model = YOLO('yolov8n.pt')
+---
 
-def video_loop(video_path: str):
-    cap = cv2.VideoCapture(video_path)
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # loop video
-            continue
-        counts = get_zone_counts(frame, model=model)
-        state['zone_counts'] = counts
-        state['nudge'] = decide_nudge(counts)
-        state['frame_count'] += 1
-        time.sleep(0.5)  # process 2 frames/sec
+## 6. ByteTrack IN/OUT — `scripts/analyze_video.py`
 
-@app.on_event("startup")
-async def startup():
-    VIDEO_PATH = "data/platform.avi"  # update to actual path
-    t = threading.Thread(target=video_loop, args=(VIDEO_PATH,), daemon=True)
-    t.start()
+Runs YOLOv8s + ByteTrack on a video, counts persons crossing a horizontal midline,
+outputs an annotated H.264 MP4.
 
-@app.get("/api/zones")
-def get_zones():
-    return state['zone_counts']
+```bash
+python3 scripts/analyze_video.py <video_path> [--seconds 30] [--outdir outputs/]
+```
 
-@app.get("/api/nudge")
-def get_nudge():
-    return state['nudge']
+Key design:
+- `deque(maxlen=15)` centroid history per track ID
+- Direction: `dy > 15` → OUT, `dy < -15` → IN
+- Counted IDs removed from dict to prevent double-counting
+- `avc1` (H.264) codec — required for QuickTime-compatible output on macOS
 
-@app.get("/api/stats")
-def get_stats():
-    # Return pre-computed historical stats
-    return {
-        "avg_imbalance_pct": 43.2,  # fill from correlation script output
-        "most_crowded_car_avg": 78.4,
-        "least_crowded_car_avg": 31.1,
-        "ratio": 2.5,
-        "train_visits_analyzed": 284
-    }
+---
+
+## 7. FastAPI Server — `backend/main.py`
+
+### Startup modes (env vars)
+
+| Variable | Effect |
+|---|---|
+| `VIDEO_PATH=<path>` | Live YOLO loop on that AVI |
+| `ZONE_JSON=<path>` | Precomputed loop replaying saved zone samples |
+| _(neither)_ | Demo loop — synthetic drifting counts |
+| `CAMERA_ROOT=<path>` | Root folder for camera AVI files |
+| `OUTPUTS_DIR=<path>` | Where tracked MP4s are written |
+
+### All endpoints
+
+```
+GET  /api/zones              → {zones: {0..4: count}, frame_count, mode, fps}
+GET  /api/nudge              → nudge object from decide_nudge()
+GET  /api/stats              → key_stat.json contents
+GET  /api/status             → {mode, yolo_available, frame_count, fps}
+
+GET  /api/stations           → [{id, name, load_pct, load_level, inside_count, next_train_min}]
+GET  /api/station/{id}       → full detail — see data contract in TEAM.md
+
+GET  /api/cameras            → {folder_name: [filename, ...]}
+POST /api/preview            → body: {folder, filename, frame_pct: 0.0–1.0}
+                               → JPEG with X-Person-Count header
+POST /api/track              → body: {folder, filename, seconds?: float}
+                               → {job_id}
+GET  /api/track/{job_id}     → {status, total_in, total_out, video_url?}
+GET  /api/outputs/{filename} → serves MP4 or JPEG from OUTPUTS_DIR
+
+GET  /api/wagon-occupancy    → {wagon: {persons, percentage, capacity, cameras_sampled}}
+```
+
+### Station registry
+
+`STATIONS_REGISTRY` in main.py maps 27 URL-safe IDs to display names and CSV names:
+```python
+"nariman-narimanov": {"name": "Nəriman Nərimanov", "csv": "Nariman Narimanov"},
+"nizami":            {"name": "Nizami",             "csv": "Nizami"},
+# ... 25 more
+```
+
+### Station load calculation
+
+`/api/stations` and `/api/station/{id}` use historical data, not live cameras:
+```
+baseline   = get_baseline(csv_name, now.hour, now.minute, now.weekday())
+peak       = get_station_peak(csv_name)
+load_pct   = (baseline / peak) * 100
+inside_count = round(baseline / 3)          # rough 45-min dwell estimate
+inflow_rate  = baseline / 15               # entries per minute
 ```
 
 ---
 
-## 5. Frontend API Integration (for Person 1)
+## 8. Frontend Hooks
 
+### `useMetroData.js` — live zone/nudge/stats polling
 ```javascript
-// src/hooks/useMetroData.js
-import { useState, useEffect } from 'react'
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
-const API_BASE = 'http://localhost:8000'
-
-export function useMetroData() {
-  const [zones, setZones] = useState({})
-  const [nudge, setNudge] = useState({})
-  const [stats, setStats] = useState({})
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const [z, n, s] = await Promise.all([
-        fetch(`${API_BASE}/api/zones`).then(r => r.json()),
-        fetch(`${API_BASE}/api/nudge`).then(r => r.json()),
-        fetch(`${API_BASE}/api/stats`).then(r => r.json()),
-      ])
-      setZones(z)
-      setNudge(n)
-      setStats(s)
-    }
-
-    fetchData()
-    const interval = setInterval(fetchData, 2000)
-    return () => clearInterval(interval)
-  }, [])
-
-  return { zones, nudge, stats }
+export function useMetroData(intervalMs = 2000) {
+  // polls /api/zones, /api/nudge, /api/stats every intervalMs
+  // returns { zones, nudge, stats, error }
 }
+```
+
+### `useAnalysis.js` — camera explorer + ByteTrack UI
+```javascript
+export function useCameras() { /* GET /api/cameras */ }
+
+export function useAnalysis() {
+  // preview()       → POST /api/preview → blob URL + X-Person-Count
+  // startTracking() → POST /api/track → poll GET /api/track/{job_id}
+}
+```
+
+### `WagonOccupancy.jsx` — direct fetch
+```javascript
+fetch(`${import.meta.env.VITE_API_URL ?? ''}/api/wagon-occupancy`)
 ```
 
 ---
@@ -292,24 +253,56 @@ export function useMetroData() {
 ## Run Order
 
 ```bash
-# Terminal 1 — Backend
-pip install ultralytics opencv-python fastapi uvicorn pandas numpy openpyxl
-uvicorn main:app --reload --port 8000
+# 1. Install Python deps
+cd backend && pip install -r requirements.txt
 
-# Terminal 2 — Correlation analysis (run once)
-python scripts/correlate.py
+# 2. Verify YOLO (downloads yolov8s.pt on first run)
+cd backend && python3 -c "from ultralytics import YOLO; YOLO('yolov8s.pt'); print('ready')"
 
-# Terminal 3 — Frontend
-cd frontend
-npm install
-npm run dev
+# 3. (Optional) Pre-compute zone JSON for demo mode
+cd backend && python3 scripts/zone_detector.py ../data/Camera/Platform/<file>.avi
+# start server with: ZONE_JSON=zone_counts.json uvicorn main:app --reload --port 8000
+
+# 4. Start backend (demo mode — no video needed)
+cd backend && uvicorn main:app --reload --port 8000
+
+# 5. Start frontend
+cd frontend && npm install && npm run dev
+
+# 6. Key stat from weight data
+cd backend && python3 scripts/correlate.py
 ```
+
+---
+
+## Deployment
+
+### Backend — Render
+Configured in `render.yaml` at repo root. Build: `cd backend && pip install -r requirements.txt`. Start: `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`. No env vars needed for demo mode; set `CAMERA_ROOT` and `OUTPUTS_DIR` if using live video.
+
+### Frontend — Vercel
+Root directory: `frontend`. Framework preset: Vite. Set one env var: `VITE_API_URL=https://<your-render-app>.onrender.com`. No build command override needed (`npm run build` is auto-detected).
+
+### Mobile
+The frontend is fully responsive and mobile-ready:
+- Layout uses `h-[100dvh]` to handle iOS Safari's dynamic viewport (avoids content hiding behind the address bar)
+- Tab nav fits on any screen width; tabs scroll horizontally if needed
+- Map tab: SVG fills full height on desktop; horizontally scrollable with `minWidth: 560px` on mobile (labels remain readable)
+- Station detail: slide-up overlay capped at 65vh so the map stays visible behind it
+- `active:` touch states on all interactive elements
+- `pb-safe` class on scrollable tab content reserves space for iOS home indicator
 
 ---
 
 ## Troubleshooting
 
-**YOLO not detecting persons:** Try `yolov8s.pt` (small) instead of nano — slightly slower but more accurate  
-**AVI won't open:** `pip install opencv-python-headless` as alternative  
-**CORS errors from frontend:** Check CORSMiddleware is in main.py  
-**Video too slow to process:** Increase `sample_every_n_frames` or reduce resolution: `frame = cv2.resize(frame, (640, 480))`
+| Problem | Fix |
+|---|---|
+| YOLO not finding people | Already using `yolov8s.pt` + conf=0.10 — check lighting/angle |
+| AVI won't open | `pip install opencv-python-headless` |
+| CORS errors | Verify `CORSMiddleware` in main.py (`allow_origins=["*"]`) |
+| Video too slow | Already resized to 640×480 in live loop |
+| MP4 corrupted in QuickTime | Must use `avc1` codec — `mp4v` breaks QuickTime on macOS |
+| `No module named 'scripts'` | Run from `backend/` directory, not `backend/scripts/` |
+| Vite proxy not working | Only applies in dev — check `vite.config.js` proxy block |
+| Map cut off on iOS Safari | Layout uses `100dvh` — if still clipping check for missing `viewport` meta in index.html |
