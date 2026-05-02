@@ -65,17 +65,9 @@ export default function AnalysisPanel() {
   } = useAnalysis()
 
   const [showTrackedVideo, setShowTrackedVideo] = useState(false)
-  const [videoError, setVideoError]             = useState(false)
 
-  useEffect(() => {
-    setShowTrackedVideo(false)
-    setVideoError(false)
-  }, [folder])
-
-  useEffect(() => {
-    setShowTrackedVideo(false)
-    setVideoError(false)
-  }, [filename])
+  useEffect(() => { setShowTrackedVideo(false) }, [folder])
+  useEffect(() => { setShowTrackedVideo(false) }, [filename])
 
   const folders          = Object.keys(cameras)
   const filenames        = folder ? (cameras[folder] || []) : []
@@ -143,21 +135,16 @@ export default function AnalysisPanel() {
           <p className="text-xs text-slate-500 font-semibold uppercase tracking-wide mb-2">
             Giriş / Çıxış İzlənməsi
           </p>
-          {videoError ? (
-            <p className="text-sm text-slate-400 py-4 text-center">Video oynadıla bilmədi</p>
-          ) : (
-            <video
-              key={folder}
-              src={demoVideo}
-              controls
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="rounded-lg w-full border border-slate-100 bg-slate-900"
-              onError={() => setVideoError(true)}
-            />
-          )}
+          <video
+            key={folder}
+            src={demoVideo}
+            controls
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="rounded-lg w-full border border-slate-100 bg-slate-900"
+          />
         </div>
       )}
 
